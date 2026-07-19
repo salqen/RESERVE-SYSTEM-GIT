@@ -41,9 +41,30 @@ Záznam zmien v projektových dokumentoch. Formát: dátum | súbor | zmena | au
 | 2026-07-19 | package.json, railway.toml, scripts/init-db.mjs | OPRAVA: v koreni repa boli ešte staré „web-wrapper" package.json a railway.toml – preto sa root služba buildovala ako web, nie backend. Nahradené backend verziami (build `npm ci && npm run build`, pre-deploy `npm run db:init`, start `npm start`, healthcheck `/health`) + doplnený chýbajúci scripts/init-db.mjs | Claude |
 | 2026-07-19 | Railway | Založený projekt (lively-tranquility), služba RESERVE-SYSTEM-GIT z GitHubu; prvý build (commit „1") padol na @backend type importe, po pushi be3651f build OK – Deployment successful | Samuel + Claude |
 
+| 2026-07-19 | Railway | Deploy DOKONČENÝ: Postgres + backend (koreň repa, doména, PORT 8080, DATABASE_URL, WEB_ORIGIN) + web (Root Directory `web`, PORT 3000, API_URL). Schéma DB inicializovaná pre-deploy hookom, /health a /catalog odpovedajú, web beží | Samuel + Claude |
+
 ---
 
-## Railway deploy – stav a zostávajúce inštrukcie (2026-07-19)
+## Railway deploy – DOKONČENÉ (2026-07-19)
+
+**Projekt:** `lively-tranquility` (MediaVolt AI, trial)
+
+| Služba | Root Directory | Doména | Port |
+|---|---|---|---|
+| Postgres | – | interná | – |
+| RESERVE-SYSTEM-GIT (backend) | prázdny (koreň) | https://reserve-system-git-production.up.railway.app | 8080 |
+| protective-eagerness (web) | `web` | https://protective-eagerness-production-b5dd.up.railway.app | 3000 |
+
+**Premenné – backend:** `DATABASE_URL=${{Postgres.DATABASE_URL}}`, `PORT=8080`, `WEB_ORIGIN=<web doména>`
+**Premenné – web:** `API_URL=<backend doména>`, `PORT=3000`
+
+**Overené:** `/health` → `{"ok":true}`; `/catalog` → `{"rooms":[],"services":[]}` (schéma vytvorená pre-deploy hookom `npm run db:init`); web sa načíta a volá backend.
+
+**Ďalší krok:** naplniť katalóg (property, izby, služby, cenník, storno politiky) a dokončiť Fázu 4 (platobná brána, e-maily, zákaznícky účet). Keepi premenné (`KEEPI_API_URL`, `KEEPI_API_KEY`, `KEEPI_WEBHOOK_SECRET`, `SERVICE_MANAGER_WEBHOOK_SECRET`) zatiaľ nenastavené – bez nich adaptér len necháva eventy v outboxe. Vlastná doména neskôr. Voliteľné: premenovať službu `protective-eagerness` na `web`.
+
+---
+
+## Pôvodné inštrukcie pred deployom (archív, 2026-07-19)
 
 **Stav:** Railway projekt `lively-tranquility` existuje, prvá služba `RESERVE-SYSTEM-GIT` (z GitHubu) má úspešný deploy commitu `be3651f`, zatiaľ „Unexposed" (bez domény). Postgres a druhá služba ešte nevytvorené. Beží sa zatiaľ na railway doménach (vlastná doména neskôr).
 
