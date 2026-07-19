@@ -60,7 +60,9 @@ Záznam zmien v projektových dokumentoch. Formát: dátum | súbor | zmena | au
 
 **Overené:** `/health` → `{"ok":true}`; `/catalog` → `{"rooms":[],"services":[]}` (schéma vytvorená pre-deploy hookom `npm run db:init`); web sa načíta a volá backend.
 
-**Ďalší krok:** naplniť katalóg (property, izby, služby, cenník, storno politiky) a dokončiť Fázu 4 (platobná brána, e-maily, zákaznícky účet). Keepi premenné (`KEEPI_API_URL`, `KEEPI_API_KEY`, `KEEPI_WEBHOOK_SECRET`, `SERVICE_MANAGER_WEBHOOK_SECRET`) zatiaľ nenastavené – bez nich adaptér len necháva eventy v outboxe. Vlastná doména neskôr. Voliteľné: premenovať službu `protective-eagerness` na `web`.
+**Demo dáta (2026-07-19):** `db/seed-demo.sql` – Penzión Lipa, 4 izby (2× dvojlôžková 75 €, trojlôžková 95 €, apartmán 140 € / min. 2 noci) so sezónnym cenníkom júl–august, 3 služby (masáž 60/90 min, privátna sauna), 3 zdroje (2 maséri + wellness miestnosť) s rozvrhom po–so 9:00–18:00, 2 storno politiky s pásmami. Nahraté cez Railway → Postgres → Data → Query. Overené: web zobrazí služby aj voľné izby vrátane sezónnej ceny.
+
+**Ďalší krok:** nahradiť demo dáta reálnym katalógom (property, izby, služby, cenník, storno politiky) a dokončiť Fázu 4 (platobná brána, e-maily, zákaznícky účet). Keepi premenné (`KEEPI_API_URL`, `KEEPI_API_KEY`, `KEEPI_WEBHOOK_SECRET`, `SERVICE_MANAGER_WEBHOOK_SECRET`) zatiaľ nenastavené – bez nich adaptér len necháva eventy v outboxe. Vlastná doména neskôr. Voliteľné: premenovať službu `protective-eagerness` na `web`.
 
 ---
 
