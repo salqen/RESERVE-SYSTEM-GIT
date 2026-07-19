@@ -7,13 +7,14 @@ export default function AdminShell({
   user, active, subtitle, children,
 }: {
   user: AdminUser;
-  active: 'calendar' | 'bookings' | 'users';
+  active: 'calendar' | 'bookings' | 'catalog' | 'users';
   subtitle: string;
   children: React.ReactNode;
 }) {
   const items = [
     { key: 'calendar', href: '/admin', label: 'Kalendár', glyph: '▦' },
     { key: 'bookings', href: '/admin/bookings', label: 'Rezervácie', glyph: '☰' },
+    { key: 'catalog', href: '/admin/catalog', label: 'Katalóg', glyph: '⌂' },
     ...(user.role === 'owner'
       ? [{ key: 'users', href: '/admin/users', label: 'Používatelia', glyph: '☺' }]
       : []),

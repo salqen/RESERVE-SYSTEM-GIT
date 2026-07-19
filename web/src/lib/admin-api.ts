@@ -145,6 +145,41 @@ export const getUsers = () => adminReq<{ users: AdminUserRow[] }>('/users');
 export const createUser = (body: { email: string; name: string; password: string; role: string }) =>
   adminReq<{ user: AdminUserRow }>('/users', { method: 'POST', body: JSON.stringify(body) });
 
+// ----------------------------------------------------------------- katalóg
+
+export interface CatalogRoomRow {
+  id: string; name: string; room_type: string; capacity: number;
+  price_night: string; min_nights: number;
+  cancellation_policy_id: string | null; active: boolean;
+}
+export interface CatalogServiceRow {
+  id: string; name: string; duration_min: number; buffer_min: number; price: string;
+  cancellation_policy_id: string | null; active: boolean; resource_ids: string[];
+}
+export interface CatalogResourceRow {
+  id: string; name: string; resource_type: string; active: boolean;
+}
+export interface AdminCatalog {
+  rooms: CatalogRoomRow[];
+  services: CatalogServiceRow[];
+  resources: CatalogResourceRow[];
+  policies: { id: string; name: string }[];
+}
+
+export const getAdminCatalog = () => adminReq<AdminCatalog>('/catalog');
+
+export const createRoom = (body: Record<string, unknown>) =>
+  adminReq<{ id: string }>('/catalog/rooms', { method: 'POST', body: JSON.stringify(body) });
+
+export const patchRoom = (id: string, body: Record<string, unknown>) =>
+  adminReq<{ id: string }>(`/catalog/rooms/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
+
+export const createService = (body: Record<string, unknown>) =>
+  adminReq<{ id: string }>('/catalog/services', { method: 'POST', body: JSON.stringify(body) });
+
+export const patchService = (id: string, body: Record<string, unknown>) =>
+  adminReq<{ id: string }>(`/catalog/services/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
+
 export const updateUser = (
   id: string,
   body: { name?: string; role?: string; active?: boolean; password?: string },

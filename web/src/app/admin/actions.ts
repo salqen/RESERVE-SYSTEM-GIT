@@ -2,7 +2,10 @@
 
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { apiLogin, apiLogout, cancelBookingAsAdmin, createUser, updateUser } from '@/lib/admin-api';
+import {
+  apiLogin, apiLogout, cancelBookingAsAdmin, createUser, updateUser,
+  createRoom, patchRoom, createService, patchService,
+} from '@/lib/admin-api';
 import { setSessionCookie, clearSessionCookie } from '@/lib/admin-session';
 
 export interface LoginState { error?: string }
@@ -63,6 +66,75 @@ export async function createUserAction(
   }
   revalidatePath('/admin/users');
   return { ok: `Účet ${email} vytvorený` };
+}
+
+// ----------------------------------------------------------------- katalóg
+
+export interface CatalogFormState { error?: string; ok?: string }
+
+function policyOrNull(value: FormDataEntryValue | null): string | null {
+  const v = String(value ?? '').trim();
+  return v === '' ? null : v;
+}
+
+export async function createRoomAction(
+  _prev: CatalogFormState, formData: FormData,
+): Promise<CatalogFormState> {
+  const name = String(formData.get('name') ?? '').trim();
+  if (!name) return { error: 'Zadajte názov izby' };
+
+  try {
+    await createRoom({
+      name,
+      room_type: String(formData.get('room_type') ?? '').trim() || 'izba',
+      capacity: Number(formData.get('capacity') ?? 2),
+      price_night: Number(formData.get('price_night') ?? 0),
+      min_nights: Number(formData.get('min_nights') ?? 1),
+      cancellation_policy_id: policyOrNull(formData.get('cancellation_policy_id')),
+    });
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Izbu sa nepodarilo pridať' };
+  }
+  revalidatePath('/admin/catalog');
+  revalidatePath('/');
+  return { ok: `Izba ${name} pridaná` };
+}
+
+export async function createServiceAction(
+  _prev: CatalogFormState, formData: FormData,
+): Promise<CatalogFormState> {
+  const name = String(formData.get('name') ?? '').trim();
+  if (!name) return { error: 'Zadajte názov služby' };
+
+  try {
+    await createService({
+      name,
+      duration_min: Number(formData.get('duration_min') ?? 60),
+      buffer_min: Number(formData.get('buffer_min') ?? 0),
+      price: Number(formData.get('price') ?? 0),
+      cancellation_policy_id: policyOrNull(formData.get('cancellation_policy_id')),
+      resource_ids: formData.getAll('resource_ids').map(String).filter(Boolean),
+    });
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Službu sa nepodarilo pridať' };
+  }
+  revalidatePath('/admin/catalog');
+  revalidatePath('/');
+  return { ok: `Služba ${name} pridaná` };
+}
+
+/** Zapnutie/vypnutie položky katalógu – deaktivovaná zmizne zo zákazníckeho webu. */
+export async function toggleCatalogItemAction(formData: FormData): Promise<void> {
+  const id = String(formData.get('itemId') ?? '');
+  const kind = String(formData.get('kind') ?? '');
+  const active = formData.get('active') === 'true';
+  if (!id) return;
+
+  if (kind === 'room') await patchRoom(id, { active });
+  else if (kind === 'service') await patchService(id, { active });
+
+  revalidatePath('/admin/catalog');
+  revalidatePath('/');
 }
 
 /** Aktivácia/deaktivácia účtu. Deaktivácia zároveň zruší jeho sessions. */

@@ -43,6 +43,9 @@ Záznam zmien v projektových dokumentoch. Formát: dátum | súbor | zmena | au
 
 | 2026-07-19 | web/src/app/page.tsx, layout.tsx, globals.css | Web: úvodná stránka zobrazuje voľné izby pre najbližší termín (predvyplnené dátumy), sekcie Ubytovanie/Služby majú funkčné kotvy v menu | Claude |
 | 2026-07-19 | src/modules/admin/auth.ts, src/index.ts, src/config.ts, .env.example | BEZPEČNOSŤ: `/admin/*` bolo verejne prístupné bez akejkoľvek autentifikácie. Pridaný Bearer token (`ADMIN_TOKEN`) s timing-safe porovnaním, fail-closed (bez tokenu 503, nie otvorené) | Claude |
+| 2026-07-19 | src/modules/admin/catalog-router.ts | Správa katalógu: GET /admin/catalog (aj skryté položky), pridanie a úprava izieb a služieb vrátane priradenia zdrojov; položky sa nemažú, len deaktivujú (odkazujú sa na ne rezervácie); názvy stĺpcov v UPDATE cez whitelist | Claude |
+| 2026-07-19 | web/src/app/admin/catalog/ | Stránka Katalóg: prehľad izieb a služieb so stavom „na webe / skrytá", zapnutie a vypnutie jedným klikom, formuláre na pridanie; upozornenie pri službe bez priradeného zdroja | Claude |
+| 2026-07-19 | web/src/app/admin/admin.css | Oprava šírky: `main` zo zákazníckych štýlov obmedzoval admin na 760 px a centroval ho – kalendár teraz využije celé okno | Claude |
 | 2026-07-19 | src/modules/admin/bookings-router.ts | Admin API rezervácií: zoznam so stránkovaním, filtrom stavu a hľadaním (meno, e-mail, ID), detail s položkami a audit logom, ručné storno so zápisom e-mailu správcu do auditu | Claude |
 | 2026-07-19 | src/modules/admin/users-router.ts | Správa správcov (len rola owner): zoznam, vytvorenie, zmena hesla/roly, deaktivácia; poistka proti vyradeniu posledného ownera; zmena hesla a deaktivácia rušia otvorené sessions | Claude |
 | 2026-07-19 | web/src/app/admin/bookings/, users/, shell.tsx | Admin stránky: zoznam rezervácií s filtrami, detail s dvojkrokovým stornom, správa používateľov; spoločný rám s bočnou navigáciou podľa roly | Claude |

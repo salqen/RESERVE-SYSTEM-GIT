@@ -3,11 +3,13 @@ import { z } from 'zod';
 import { pool } from '../../db';
 import { adminBookingsRouter } from './bookings-router';
 import { adminUsersRouter } from './users-router';
+import { adminCatalogRouter } from './catalog-router';
 
 export const adminRouter = Router();
 
 adminRouter.use('/bookings', adminBookingsRouter);
 adminRouter.use('/users', adminUsersRouter);
+adminRouter.use('/catalog', adminCatalogRouter);
 
 /**
  * GET /admin/calendar?from=2026-08-01&to=2026-08-08[&propertyId=...]
