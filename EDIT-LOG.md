@@ -26,3 +26,9 @@ Záznam zmien v projektových dokumentoch. Formát: dátum | súbor | zmena | au
 | 2026-07-19 | tests/erp.test.ts | Fáza 3: unit testy podkladu faktúry, HMAC podpisov, keepi klienta (fake fetch) | Claude |
 | 2026-07-19 | tests/outbox.db.test.ts | Fáza 3: PGlite testy outbox workera (sent/retry/failed), ERP sendera a timeoff konfliktov | Claude |
 | 2026-07-19 | RESERVE-SYSTEM-GIT/ | Projekt (dokumenty + rezervacny-system) commitnutý do GitHub repa | Claude |
+| 2026-07-19 | RESERVE-SYSTEM-GIT/ | RESERVE-SYSTEM-GIT je odteraz HLAVNÝ repozitár projektu (zdroj pravdy); Vercel deploy napojený na main | Samuel + Claude |
+| 2026-07-19 | src/modules/catalog/router.ts | Fáza 4: GET /catalog – zoznam aktívnych izieb a služieb pre web | Claude |
+| 2026-07-19 | src/index.ts, src/config.ts | Fáza 4: CORS pre web origin (WEB_ORIGIN), mount /catalog | Claude |
+| 2026-07-19 | src/modules/bookings/types.ts | Fáza 4: zdieľané typy booking flow vyčlenené bez runtime závislostí (type-only import z webu) | Claude |
+| 2026-07-19 | web/ | Fáza 4: zákaznícky web (Next.js 14 App Router, TS) – katalóg, voľné izby, sloty služieb, hold → checkout → confirm, detail rezervácie + samoobslužné storno; server actions, API_URL len na serveri | Claude |
+| 2026-07-19 | web/src/lib/api.ts | Fáza 4: typovaný API klient, typy zdieľané s backendom cez @backend/* alias | Claude |

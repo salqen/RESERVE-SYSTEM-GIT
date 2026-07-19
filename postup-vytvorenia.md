@@ -58,8 +58,10 @@ Najrizikovejšia časť, robiť ako prvú:
 - **Fáza 1 – hotová:** schéma (`db/schema.sql`), exclusion constraints na izby aj sloty zdrojov, `GET /availability`, dočasný hold (DB, TTL), integračné race-condition testy proti PGlite (`tests/booking.db.test.ts`) – 5 paralelných holdov na ten istý termín → prejde práve jeden.
 - **Fáza 2 – hotová:** booking flow (hold/confirm/cancel, idempotency, audit), sezónne ceny (`room_price_rule`), **storno politiky** (`cancellation_policy`/`cancellation_tier` + výpočet refundu podľa času do začiatku), **admin kalendár** (`GET /admin/calendar`).
 - **Fáza 3 – hotová:** adaptér na keepi ERP (`src/modules/erp/` – podklad faktúry z `booking.confirmed`, refund/fee z `booking.cancelled`, `erp_invoice_id` na bookingu), outbox worker s exponenciálnym backoffom napojený na reálny sender; webhooky (`src/modules/webhooks/`) s HMAC-SHA256 podpisom: `POST /webhooks/keepi/payment` (stav platby → `booking.payment_status`) a `POST /webhooks/service-manager/timeoff` (zápis PN/dovolenky + detekcia konfliktov s rezerváciami → audit + notifikácia `timeoff.conflict` do outboxu, manuálne riešenie).
-- **Overené:** `tsc --noEmit` bez chýb, `npm test` = 26/26 OK.
-- **Ďalej:** Fáza 4 – zákaznícky web (Next.js), potom Fáza 5 (prevádzka).
-- **Git:** projekt je verzovaný v `RESERVE-SYSTEM-GIT/` (GitHub: salqen/RESERVE-SYSTEM-GIT).
+- **Fáza 4 – jadro hotové:** zákaznícky web `web/` (Next.js 14 App Router + TypeScript): vyhľadanie voľných izieb, výber slotov služieb, booking flow hold → checkout → potvrdenie (testovacia platba), detail rezervácie + samoobslužné storno podľa storno podmienok. Typy zdieľané s backendom (`@backend/*` type-only alias → `rezervacny-system/src/modules/bookings/types.ts`). Backend doplnený o `GET /catalog` a CORS (`WEB_ORIGIN`). Volania na API bežia len na serveri (server components + server actions).
+  - **Zostáva vo Fáze 4:** reálna platobná brána (zatiaľ testovacie tlačidlo), potvrdzovacie e-maily, zákaznícky účet s históriou (vyžaduje auth) – detail rezervácie zatiaľ funguje ako samoobslužný odkaz.
+- **Overené:** backend `tsc --noEmit` bez chýb + `npm test` = 26/26 OK; web `tsc --noEmit` bez chýb.
+- **Ďalej:** dokončiť Fázu 4 (platobná brána, e-maily, účet), potom Fáza 5 (prevádzka).
+- **Git:** HLAVNÝ repozitár = `RESERVE-SYSTEM-GIT/` (GitHub: salqen/RESERVE-SYSTEM-GIT, Vercel deploy z main). Pre Vercel treba v Project Settings nastaviť **Root Directory = `web`** (repo root nie je Next.js app – preto 404); backend (Express + joby) potrebuje vlastný hosting (Railway/Fly/Render) alebo serverless úpravu.
 
 > Pozn.: pridaný dev dependency `@electric-sql/pglite`; po pull-e spusti `npm install`.
