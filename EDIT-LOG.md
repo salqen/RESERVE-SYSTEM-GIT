@@ -43,6 +43,10 @@ Záznam zmien v projektových dokumentoch. Formát: dátum | súbor | zmena | au
 
 | 2026-07-19 | web/src/app/page.tsx, layout.tsx, globals.css | Web: úvodná stránka zobrazuje voľné izby pre najbližší termín (predvyplnené dátumy), sekcie Ubytovanie/Služby majú funkčné kotvy v menu | Claude |
 | 2026-07-19 | src/modules/admin/auth.ts, src/index.ts, src/config.ts, .env.example | BEZPEČNOSŤ: `/admin/*` bolo verejne prístupné bez akejkoľvek autentifikácie. Pridaný Bearer token (`ADMIN_TOKEN`) s timing-safe porovnaním, fail-closed (bez tokenu 503, nie otvorené) | Claude |
+| 2026-07-19 | src/modules/admin/catalog-router.ts | Sezónny cenník: POST /catalog/rooms/:id/prices, DELETE /catalog/prices/:id; prekryv sezón blokuje exclusion constraint v DB (23P01 → zrozumiteľná hláška) | Claude |
+| 2026-07-19 | src/modules/admin/catalog-router.ts | Zdroje: POST/PATCH /catalog/resources, PUT /catalog/resources/:id/hours (celý týždenný rozvrh naraz v transakcii); GET /catalog vracia aj rozvrhy a sezónne ceny | Claude |
+| 2026-07-19 | web/src/app/admin/catalog/edit-forms.tsx | Formuláre na úpravu existujúcich izieb a služieb, pridanie a mazanie sezón, zakladanie zdrojov a nastavenie pracovného času po dňoch | Claude |
+| 2026-07-19 | web/src/app/admin/catalog/page.tsx | Katalóg prerobený na položkový zoznam: každá izba/služba/zdroj má rozbaľovaciu úpravu; upozornenia pri službe bez zdroja a pri zdroji bez rozvrhu | Claude |
 | 2026-07-19 | src/modules/admin/catalog-router.ts | Správa katalógu: GET /admin/catalog (aj skryté položky), pridanie a úprava izieb a služieb vrátane priradenia zdrojov; položky sa nemažú, len deaktivujú (odkazujú sa na ne rezervácie); názvy stĺpcov v UPDATE cez whitelist | Claude |
 | 2026-07-19 | web/src/app/admin/catalog/ | Stránka Katalóg: prehľad izieb a služieb so stavom „na webe / skrytá", zapnutie a vypnutie jedným klikom, formuláre na pridanie; upozornenie pri službe bez priradeného zdroja | Claude |
 | 2026-07-19 | web/src/app/admin/admin.css | Oprava šírky: `main` zo zákazníckych štýlov obmedzoval admin na 760 px a centroval ho – kalendár teraz využije celé okno | Claude |
@@ -83,7 +87,53 @@ Záznam zmien v projektových dokumentoch. Formát: dátum | súbor | zmena | au
 
 **Demo dáta (2026-07-19):** `db/seed-demo.sql` – Penzión Lipa, 4 izby (2× dvojlôžková 75 €, trojlôžková 95 €, apartmán 140 € / min. 2 noci) so sezónnym cenníkom júl–august, 3 služby (masáž 60/90 min, privátna sauna), 3 zdroje (2 maséri + wellness miestnosť) s rozvrhom po–so 9:00–18:00, 2 storno politiky s pásmami. Nahraté cez Railway → Postgres → Data → Query. Overené: web zobrazí služby aj voľné izby vrátane sezónnej ceny.
 
-**Ďalší krok:** nahradiť demo dáta reálnym katalógom (property, izby, služby, cenník, storno politiky) a dokončiť Fázu 4 (platobná brána, e-maily, zákaznícky účet). Keepi premenné (`KEEPI_API_URL`, `KEEPI_API_KEY`, `KEEPI_WEBHOOK_SECRET`, `SERVICE_MANAGER_WEBHOOK_SECRET`) zatiaľ nenastavené – bez nich adaptér len necháva eventy v outboxe. Vlastná doména neskôr. Voliteľné: premenovať službu `protective-eagerness` na `web`.
+**Poznámka:** demo dáta sa dajú prepísať priamo v admine (`/admin/catalog`), SQL už netreba.
+
+---
+
+## Admin – stav (2026-07-19)
+
+**Adresa:** `<web doména>/admin` · prihlásenie účtom z tabuľky `admin_user`
+**Vzhľad:** tmavý štýl podľa `COMPONENT SITE / component-library-v2.html` (pozadie `#0a0604`, akcent `#ff6a00`, Inter + Space Grotesk). Platí len pod `/admin`, zákaznícky web zostáva svetlý.
+
+### Prihlásenie a účty
+
+- Heslá: scrypt (zabudovaný v Node, žiadna natívna závislosť), parametre uložené v hashi
+- Session: 32 náhodných bajtov, v DB **len SHA-256 hash**, platnosť 12 h, httpOnly cookie (`secure`, `sameSite: lax`, `path: /admin`)
+- Rate limit: 5 neúspešných pokusov / 15 min na e-mail
+- Neznámy e-mail a zlé heslo majú rovnakú hlášku aj rovnaký čas odpovede (nedá sa zisťovať, ktoré účty existujú)
+- Roly: `owner` (navyše správa používateľov), `staff`
+- Poistky: nedá sa vyradiť posledný aktívny owner, vlastný účet sa nedá deaktivovať, zmena hesla či deaktivácia okamžite ruší otvorené sessions
+- Prvý účet: `npm run admin:create -- --email … --name "…"` (heslo cez skrytý vstup alebo `ADMIN_PASSWORD`, nikdy v argumentoch)
+
+### Sekcie
+
+| Sekcia | Čo umožňuje |
+|---|---|
+| Kalendár (`/admin`) | Mriežka izby × dni, pruhy rezervácií (potvrdené / hold), sekcia zdrojov s obsadením a neprítomnosťami, posun po týždňoch, obsadenosť v % |
+| Rezervácie (`/admin/bookings`) | Zoznam so stránkovaním, filter podľa stavu, hľadanie podľa mena, e-mailu aj ID; detail s položkami, platbou a audit logom; ručné storno s dvojkrokovým potvrdením |
+| Katalóg (`/admin/catalog`) | Izby a služby: pridanie, úprava, zverejnenie/skrytie. Sezónny cenník izieb. Zdroje: pridanie, vypnutie, týždenný pracovný čas |
+| Používatelia (`/admin/users`) | Len owner: zoznam s počtom otvorených relácií, zakladanie účtov, deaktivácia |
+
+### Rozhodnutia, ktoré sa oplatí pamätať
+
+- **Katalóg sa nemaže, len skrýva** (`active = false`) – na položky sa odkazujú rezervácie a faktúry v ERP
+- **Prekryv sezón** rieši exclusion constraint v DB, nie aplikačná logika; chyba 23P01 sa prekladá na hlášku
+- **Rozvrh zdroja** sa nahrádza celý naraz v transakcii; nezaškrtnuté dni = voľno
+- **Whitelist stĺpcov** pri skladaní `UPDATE` – názvy nikdy nejdú priamo z tela požiadavky
+- Admin upozorňuje na tiché chyby: služba bez zdroja a zdroj bez rozvrhu sa síce uložia, ale nedajú sa rezervovať
+
+### Overené
+
+`tsc --noEmit` čistý (backend aj web), testy 56/56, `next build` prejde so všetkými admin routami.
+
+---
+
+## Čo zostáva
+
+**Fáza 4:** reálna platobná brána (teraz testovacie tlačidlo, potvrdí bez platby), potvrdzovacie e-maily, zákaznícky účet s históriou.
+**Fáza 5:** pripomienky, čakacie listiny, skupinové rezervácie, monitoring, GDPR retencia, záťažový test.
+**Konfigurácia:** Keepi premenné (`KEEPI_API_URL`, `KEEPI_API_KEY`, `KEEPI_WEBHOOK_SECRET`, `SERVICE_MANAGER_WEBHOOK_SECRET`) nenastavené – bez nich adaptér necháva eventy v outboxe (bezpečné). Vlastná doména neskôr. Voliteľné: premenovať službu `protective-eagerness` na `web`.
 
 ---
 

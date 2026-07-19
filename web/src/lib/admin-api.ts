@@ -156,14 +156,19 @@ export interface CatalogServiceRow {
   id: string; name: string; duration_min: number; buffer_min: number; price: string;
   cancellation_policy_id: string | null; active: boolean; resource_ids: string[];
 }
+export interface ResourceHours { weekday: number; open: string; close: string }
 export interface CatalogResourceRow {
-  id: string; name: string; resource_type: string; active: boolean;
+  id: string; name: string; resource_type: string; active: boolean; hours: ResourceHours[];
+}
+export interface PriceRuleRow {
+  id: string; room_id: string; season_from: string; season_to: string; price_night: string;
 }
 export interface AdminCatalog {
   rooms: CatalogRoomRow[];
   services: CatalogServiceRow[];
   resources: CatalogResourceRow[];
   policies: { id: string; name: string }[];
+  prices: PriceRuleRow[];
 }
 
 export const getAdminCatalog = () => adminReq<AdminCatalog>('/catalog');
@@ -179,6 +184,27 @@ export const createService = (body: Record<string, unknown>) =>
 
 export const patchService = (id: string, body: Record<string, unknown>) =>
   adminReq<{ id: string }>(`/catalog/services/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
+
+export const addPriceRule = (roomId: string, body: Record<string, unknown>) =>
+  adminReq<{ id: string }>(`/catalog/rooms/${roomId}/prices`, {
+    method: 'POST', body: JSON.stringify(body),
+  });
+
+export const deletePriceRule = (ruleId: string) =>
+  adminReq<unknown>(`/catalog/prices/${ruleId}`, { method: 'DELETE' });
+
+export const createResource = (body: Record<string, unknown>) =>
+  adminReq<{ id: string }>('/catalog/resources', { method: 'POST', body: JSON.stringify(body) });
+
+export const patchResource = (id: string, body: Record<string, unknown>) =>
+  adminReq<{ id: string }>(`/catalog/resources/${id}`, {
+    method: 'PATCH', body: JSON.stringify(body),
+  });
+
+export const setResourceHours = (id: string, hours: ResourceHours[]) =>
+  adminReq<{ days: number }>(`/catalog/resources/${id}/hours`, {
+    method: 'PUT', body: JSON.stringify({ hours }),
+  });
 
 export const updateUser = (
   id: string,

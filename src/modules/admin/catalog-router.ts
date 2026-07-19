@@ -6,7 +6,7 @@
  */
 import { Router } from 'express';
 import { z } from 'zod';
-import { pool } from '../../db';
+import { pool, withTransaction, EXCLUSION_VIOLATION } from '../../db';
 
 export const adminCatalogRouter = Router();
 
@@ -65,15 +65,29 @@ adminCatalogRouter.get('/', async (_req, res, next) => {
            LEFT JOIN service_resource sr ON sr.service_id = s.id
           GROUP BY s.id ORDER BY s.active DESC, s.name`),
       pool.query(
-        `SELECT id, name, resource_type, active FROM resource ORDER BY active DESC, name`),
+        `SELECT r.id, r.name, r.resource_type, r.active,
+                COALESCE(json_agg(
+                  json_build_object('weekday', h.weekday,
+                                    'open', to_char(h.open_time, 'HH24:MI'),
+                                    'close', to_char(h.close_time, 'HH24:MI'))
+                  ORDER BY h.weekday
+                ) FILTER (WHERE h.id IS NOT NULL), '[]') AS hours
+           FROM resource r
+           LEFT JOIN resource_hours h ON h.resource_id = r.id
+          GROUP BY r.id ORDER BY r.active DESC, r.name`),
       pool.query('SELECT id, name FROM cancellation_policy ORDER BY name'),
     ]);
+
+    const prices = await pool.query(
+      `SELECT id, room_id, lower(season) AS season_from, upper(season) AS season_to, price_night
+         FROM room_price_rule ORDER BY room_id, lower(season)`);
 
     res.json({
       rooms: rooms.rows,
       services: services.rows,
       resources: resources.rows,
       policies: policies.rows,
+      prices: prices.rows,
     });
   } catch (err) {
     next(err);
@@ -203,6 +217,147 @@ adminCatalogRouter.patch('/services/:id', async (req, res, next) => {
     }
 
     res.json({ id: req.params.id });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ------------------------------------------------------------ sezónne ceny
+
+const priceRuleSchema = z.object({
+  season_from: z.string().date(),
+  season_to: z.string().date(),
+  price_night: z.coerce.number().min(0).max(100000),
+});
+
+/**
+ * POST /admin/catalog/rooms/:id/prices – sezónna cena.
+ * Prekryv sezón blokuje exclusion constraint priamo v DB; chybu 23P01
+ * prekladáme na zrozumiteľnú hlášku.
+ */
+adminCatalogRouter.post('/rooms/:id/prices', async (req, res, next) => {
+  try {
+    if (!z.string().uuid().safeParse(req.params.id).success) {
+      return res.status(400).json({ error: 'Neplatné ID izby' });
+    }
+    const parsed = priceRuleSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'Skontrolujte dátumy a cenu' });
+    if (parsed.data.season_from >= parsed.data.season_to) {
+      return res.status(400).json({ error: 'Začiatok sezóny musí byť pred koncom' });
+    }
+
+    const r = await pool.query(
+      `INSERT INTO room_price_rule (room_id, season, price_night)
+       VALUES ($1, daterange($2::date, $3::date), $4) RETURNING id`,
+      [req.params.id, parsed.data.season_from, parsed.data.season_to, parsed.data.price_night],
+    );
+    res.status(201).json({ id: r.rows[0].id });
+  } catch (err) {
+    if ((err as { code?: string }).code === EXCLUSION_VIOLATION) {
+      return res.status(409).json({ error: 'Sezóna sa prekrýva s inou sezónou tejto izby' });
+    }
+    next(err);
+  }
+});
+
+adminCatalogRouter.delete('/prices/:ruleId', async (req, res, next) => {
+  try {
+    if (!z.string().uuid().safeParse(req.params.ruleId).success) {
+      return res.status(400).json({ error: 'Neplatné ID pravidla' });
+    }
+    const r = await pool.query('DELETE FROM room_price_rule WHERE id = $1', [req.params.ruleId]);
+    if (r.rowCount === 0) return res.status(404).json({ error: 'Pravidlo neexistuje' });
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ----------------------------------------------------------------- zdroje
+
+const resourceSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  resource_type: z.enum(['staff', 'room', 'equipment']),
+});
+
+adminCatalogRouter.post('/resources', async (req, res, next) => {
+  try {
+    const parsed = resourceSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'Zadajte názov a typ zdroja' });
+
+    const propertyId = await ensurePropertyId();
+    const r = await pool.query(
+      `INSERT INTO resource (property_id, name, resource_type) VALUES ($1, $2, $3) RETURNING id`,
+      [propertyId, parsed.data.name, parsed.data.resource_type],
+    );
+    res.status(201).json({ id: r.rows[0].id });
+  } catch (err) {
+    next(err);
+  }
+});
+
+const resourcePatchSchema = resourceSchema.partial().extend({ active: z.boolean().optional() });
+const RESOURCE_COLUMNS = ['name', 'resource_type', 'active'] as const;
+
+adminCatalogRouter.patch('/resources/:id', async (req, res, next) => {
+  try {
+    if (!z.string().uuid().safeParse(req.params.id).success) {
+      return res.status(400).json({ error: 'Neplatné ID zdroja' });
+    }
+    const parsed = resourcePatchSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'Skontrolujte vyplnené polia' });
+
+    const { sets, params } = buildUpdate(parsed.data, RESOURCE_COLUMNS);
+    if (sets.length === 0) return res.status(400).json({ error: 'Žiadna zmena' });
+
+    params.push(req.params.id);
+    const r = await pool.query(
+      `UPDATE resource SET ${sets.join(', ')} WHERE id = $${params.length} RETURNING id`, params);
+    if (r.rowCount === 0) return res.status(404).json({ error: 'Zdroj neexistuje' });
+    res.json({ id: r.rows[0].id });
+  } catch (err) {
+    next(err);
+  }
+});
+
+const hoursSchema = z.object({
+  hours: z.array(z.object({
+    weekday: z.coerce.number().int().min(0).max(6),
+    open: z.string().regex(/^\d{2}:\d{2}$/),
+    close: z.string().regex(/^\d{2}:\d{2}$/),
+  })).max(7),
+});
+
+/**
+ * PUT /admin/catalog/resources/:id/hours – celý týždenný rozvrh naraz.
+ * Nahrádza sa kompletne; dni, ktoré neprídu, znamenajú voľno.
+ */
+adminCatalogRouter.put('/resources/:id/hours', async (req, res, next) => {
+  try {
+    if (!z.string().uuid().safeParse(req.params.id).success) {
+      return res.status(400).json({ error: 'Neplatné ID zdroja' });
+    }
+    const parsed = hoursSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'Neplatný rozvrh' });
+
+    for (const h of parsed.data.hours) {
+      if (h.open >= h.close) {
+        return res.status(400).json({ error: 'Začiatok musí byť pred koncom pracovného času' });
+      }
+    }
+
+    await withTransaction(async (client) => {
+      await client.query('DELETE FROM resource_hours WHERE resource_id = $1', [req.params.id]);
+      for (const h of parsed.data.hours) {
+        await client.query(
+          `INSERT INTO resource_hours (resource_id, weekday, open_time, close_time)
+           VALUES ($1, $2, $3::time, $4::time)`,
+          [req.params.id, h.weekday, h.open, h.close],
+        );
+      }
+    });
+
+    res.json({ id: req.params.id, days: parsed.data.hours.length });
   } catch (err) {
     next(err);
   }

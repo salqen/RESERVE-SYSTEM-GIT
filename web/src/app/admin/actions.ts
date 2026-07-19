@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import {
   apiLogin, apiLogout, cancelBookingAsAdmin, createUser, updateUser,
   createRoom, patchRoom, createService, patchService,
+  addPriceRule, deletePriceRule, createResource, patchResource, setResourceHours,
 } from '@/lib/admin-api';
 import { setSessionCookie, clearSessionCookie } from '@/lib/admin-session';
 
@@ -144,4 +145,136 @@ export async function toggleUserAction(formData: FormData): Promise<void> {
   if (!id) return;
   await updateUser(id, { active });
   revalidatePath('/admin/users');
+}
+
+/** Úprava existujúcej izby. */
+export async function updateRoomAction(
+  _prev: CatalogFormState, formData: FormData,
+): Promise<CatalogFormState> {
+  const id = String(formData.get('roomId') ?? '');
+  if (!id) return { error: 'Chýba izba' };
+
+  try {
+    await patchRoom(id, {
+      name: String(formData.get('name') ?? '').trim(),
+      room_type: String(formData.get('room_type') ?? '').trim(),
+      capacity: Number(formData.get('capacity')),
+      price_night: Number(formData.get('price_night')),
+      min_nights: Number(formData.get('min_nights')),
+      cancellation_policy_id: policyOrNull(formData.get('cancellation_policy_id')),
+    });
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Zmenu sa nepodarilo uložiť' };
+  }
+  revalidatePath('/admin/catalog');
+  revalidatePath('/');
+  return { ok: 'Izba upravená' };
+}
+
+/** Úprava existujúcej služby vrátane priradených zdrojov. */
+export async function updateServiceAction(
+  _prev: CatalogFormState, formData: FormData,
+): Promise<CatalogFormState> {
+  const id = String(formData.get('serviceId') ?? '');
+  if (!id) return { error: 'Chýba služba' };
+
+  try {
+    await patchService(id, {
+      name: String(formData.get('name') ?? '').trim(),
+      duration_min: Number(formData.get('duration_min')),
+      buffer_min: Number(formData.get('buffer_min')),
+      price: Number(formData.get('price')),
+      cancellation_policy_id: policyOrNull(formData.get('cancellation_policy_id')),
+      resource_ids: formData.getAll('resource_ids').map(String).filter(Boolean),
+    });
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Zmenu sa nepodarilo uložiť' };
+  }
+  revalidatePath('/admin/catalog');
+  revalidatePath('/');
+  return { ok: 'Služba upravená' };
+}
+
+/** Sezónna cena izby. Prekryv sezón odmietne databáza. */
+export async function addPriceRuleAction(
+  _prev: CatalogFormState, formData: FormData,
+): Promise<CatalogFormState> {
+  const roomId = String(formData.get('roomId') ?? '');
+  if (!roomId) return { error: 'Chýba izba' };
+
+  try {
+    await addPriceRule(roomId, {
+      season_from: String(formData.get('season_from') ?? ''),
+      season_to: String(formData.get('season_to') ?? ''),
+      price_night: Number(formData.get('price_night')),
+    });
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Sezónu sa nepodarilo pridať' };
+  }
+  revalidatePath('/admin/catalog');
+  revalidatePath('/');
+  return { ok: 'Sezónna cena pridaná' };
+}
+
+export async function deletePriceRuleAction(formData: FormData): Promise<void> {
+  const ruleId = String(formData.get('ruleId') ?? '');
+  if (!ruleId) return;
+  await deletePriceRule(ruleId);
+  revalidatePath('/admin/catalog');
+  revalidatePath('/');
+}
+
+/** Nový zdroj – personál, miestnosť alebo zariadenie. */
+export async function createResourceAction(
+  _prev: CatalogFormState, formData: FormData,
+): Promise<CatalogFormState> {
+  const name = String(formData.get('name') ?? '').trim();
+  if (!name) return { error: 'Zadajte názov zdroja' };
+
+  try {
+    await createResource({
+      name,
+      resource_type: String(formData.get('resource_type') ?? 'staff'),
+    });
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Zdroj sa nepodarilo pridať' };
+  }
+  revalidatePath('/admin/catalog');
+  return { ok: `Zdroj ${name} pridaný` };
+}
+
+export async function toggleResourceAction(formData: FormData): Promise<void> {
+  const id = String(formData.get('resourceId') ?? '');
+  const active = formData.get('active') === 'true';
+  if (!id) return;
+  await patchResource(id, { active });
+  revalidatePath('/admin/catalog');
+}
+
+/**
+ * Týždenný rozvrh zdroja. Formulár posiela pre každý deň zaškrtnutie
+ * a časy; nezaškrtnuté dni sa neposielajú a znamenajú voľno.
+ */
+export async function setResourceHoursAction(
+  _prev: CatalogFormState, formData: FormData,
+): Promise<CatalogFormState> {
+  const id = String(formData.get('resourceId') ?? '');
+  if (!id) return { error: 'Chýba zdroj' };
+
+  const hours: { weekday: number; open: string; close: string }[] = [];
+  for (let weekday = 0; weekday <= 6; weekday++) {
+    if (formData.get(`day-${weekday}`) !== 'on') continue;
+    const open = String(formData.get(`open-${weekday}`) ?? '');
+    const close = String(formData.get(`close-${weekday}`) ?? '');
+    if (!open || !close) continue;
+    hours.push({ weekday, open, close });
+  }
+
+  try {
+    await setResourceHours(id, hours);
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Rozvrh sa nepodarilo uložiť' };
+  }
+  revalidatePath('/admin/catalog');
+  return { ok: hours.length === 0 ? 'Rozvrh vymazaný – zdroj nemá voľné termíny' : 'Rozvrh uložený' };
 }
