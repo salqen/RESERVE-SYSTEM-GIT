@@ -8,4 +8,6 @@ export const config = {
   keepiWebhookSecret: process.env.KEEPI_WEBHOOK_SECRET ?? '',
   // Fáza 3 – service manager
   serviceManagerWebhookSecret: process.env.SERVICE_MANAGER_WEBHOOK_SECRET ?? '',
+  // Fáza 4 – zákaznícky web (CORS)
+  webOrigin: process.env.WEB_ORIGIN ?? 'http://localhost:3000',
 };

@@ -1,0 +1,13 @@
+# Railway config – WEB služba (Root Directory = koreň repa!)
+# Web sa builduje z root-u, lebo pri typechecku potrebuje zdieľané typy
+# z rezervacny-system/src (tsconfig alias @backend/*).
+# Env: API_URL = URL backend služby (napr. http://backend.railway.internal:3001)
+
+[build]
+buildCommand = "npm run build"
+
+[deploy]
+startCommand = "npm start"
+healthcheckPath = "/"
+healthcheckTimeout = 120
+restartPolicyType = "ON_FAILURE"

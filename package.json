@@ -1,29 +1,13 @@
 {
-  "name": "rezervacny-system",
+  "name": "reserve-system",
   "version": "0.1.0",
-  "description": "Rezervačný systém pre ubytovanie + služby (Express + TypeScript + PostgreSQL)",
-  "main": "dist/index.js",
+  "private": true,
+  "description": "Monorepo: rezervacny-system (backend) + web (Next.js). Root skripty delegujú do web/ – WEB služba na Railway beží z root-u repa, aby mala k dispozícii zdieľané typy z rezervacny-system/src.",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "test": "tsx --test tests/*.test.ts",
-    "db:init": "psql \"$DATABASE_URL\" -f db/schema.sql"
-  },
-  "dependencies": {
-    "express": "^4.19.2",
-    "pg": "^8.12.0",
-    "zod": "^3.23.8"
-  },
-  "devDependencies": {
-    "@electric-sql/pglite": "^0.2.0",
-    "@types/express": "^4.17.21",
-    "@types/node": "^20.14.0",
-    "@types/pg": "^8.11.6",
-    "tsx": "^4.16.0",
-    "typescript": "^5.5.0"
+    "build": "npm install --prefix web --no-audit --no-fund && npm run build --prefix web",
+    "start": "npm start --prefix web"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   }
 }

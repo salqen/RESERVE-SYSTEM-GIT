@@ -4,6 +4,7 @@ import { availabilityRouter } from './modules/availability/router';
 import { bookingsRouter } from './modules/bookings/router';
 import { adminRouter } from './modules/admin/router';
 import { webhooksRouter } from './modules/webhooks/router';
+import { catalogRouter } from './modules/catalog/router';
 import { startJobs } from './jobs/cleanup';
 
 const app = express();
@@ -12,7 +13,17 @@ app.use(express.json({
   verify: (req, _res, buf) => { (req as any).rawBody = buf; },
 }));
 
+// CORS pre zákaznícky web (Fáza 4)
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', config.webOrigin);
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'content-type');
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
+
 app.get('/health', (_req, res) => res.json({ ok: true }));
+app.use('/catalog', catalogRouter);
 app.use('/availability', availabilityRouter);
 app.use('/bookings', bookingsRouter);
 app.use('/admin', adminRouter);

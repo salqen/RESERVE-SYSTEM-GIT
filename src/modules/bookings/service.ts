@@ -6,16 +6,9 @@ import { refundForItem, CancellationTier, RefundLine } from './cancellation';
 export class ConflictError extends Error {}       // termín je obsadený
 export class DuplicateRequestError extends Error {} // rovnaký idempotency key
 
-export interface RoomItem { roomId: string; checkIn: string; checkOut: string }
-export interface ServiceItem { serviceId: string; resourceId: string; startsAt: string }
-
-export interface CreateHoldInput {
-  idempotencyKey: string;
-  customer: { erpCustomerId?: string; name: string; email: string; phone?: string };
-  rooms: RoomItem[];
-  services: ServiceItem[];
-  note?: string;
-}
+// Zdieľané typy (aj pre web) – src/modules/bookings/types.ts
+export type { RoomItem, ServiceItem, CreateHoldInput } from './types';
+import type { CreateHoldInput } from './types';
 
 async function audit(client: PoolClient, bookingId: string | null, actor: string, action: string, detail: unknown) {
   await client.query(
