@@ -43,6 +43,15 @@ Záznam zmien v projektových dokumentoch. Formát: dátum | súbor | zmena | au
 
 | 2026-07-19 | web/src/app/page.tsx, layout.tsx, globals.css | Web: úvodná stránka zobrazuje voľné izby pre najbližší termín (predvyplnené dátumy), sekcie Ubytovanie/Služby majú funkčné kotvy v menu | Claude |
 | 2026-07-19 | src/modules/admin/auth.ts, src/index.ts, src/config.ts, .env.example | BEZPEČNOSŤ: `/admin/*` bolo verejne prístupné bez akejkoľvek autentifikácie. Pridaný Bearer token (`ADMIN_TOKEN`) s timing-safe porovnaním, fail-closed (bez tokenu 503, nie otvorené) | Claude |
+| 2026-07-19 | db/migrations/003_customer_accounts.sql | OPRAVA CHYBY: zákazník sa upsertoval podľa `erp_customer_id`, ktorý je pri objednávke z webu NULL – v Postgrese sa NULL v unikátnom indexe nekonfliktuje, takže každá ďalšia rezervácia toho istého človeka zakladala NOVÝ riadok. Migrácia zlúči duplicity, pridá unikátny index na `lower(email)`, heslo a `customer_session` | Claude |
+| 2026-07-19 | src/modules/bookings/service.ts | Upsert zákazníka prepnutý na `ON CONFLICT (lower(email))` | Claude |
+| 2026-07-19 | src/modules/customers/account.ts, router.ts | Zákaznícke účty: registrácia, prihlásenie, sessions (30 dní), história rezervácií; kto rezervoval ako hosť, po registrácii na ten istý e-mail vidí staršie rezervácie | Claude |
+| 2026-07-19 | web/src/app/(site)/ucet/, web/src/lib/account-api.ts | Stránky účtu: prihlásenie a registrácia, prehľad nadchádzajúcich a všetkých rezervácií; token v httpOnly cookie; odkaz na účet v hlavičke | Claude |
+| 2026-07-19 | tests/customer-account.db.test.ts | Testy účtov vrátane overenia, že unikátny index a upsert naozaj zabránia duplicitným zákazníkom | Claude |
+| 2026-07-19 | web/src/app/admin/sidebar.tsx, icons.tsx | Bočné menu prerobené: vysúvateľné (240 px / 64 px), ikony ako inline SVG + názvy, tooltipy v zbalenom stave, preferencia uložená v prehliadači, aktívna položka podľa cesty | Claude |
+| 2026-07-19 | web/src/app/admin/shell.tsx, admin.css | Celý dashboard prepracovaný: topbar s identitou, hlavička stránky s titulkom a akciami, karty s metrikami, zjednotené tlačidlá, tabuľky a formuláre; CSS triedy odscopované pod `.admin` | Claude |
+| 2026-07-19 | src/modules/admin/overview-router.ts, web/src/app/admin/page.tsx | Nová úvodná obrazovka: obsadenosť dnes, príchody a odchody, tržby za mesiac, čakajúce holdy, stav synchronizácie a upozornenia na tiché chyby konfigurácie. Kalendár presunutý na `/admin/kalendar` | Claude |
+| 2026-07-19 | web/src/app/admin/roadmap/ | Stav projektu priamo v admine: fázy, čo je hotové, čo čaká na konfiguráciu a na čo presne, čo zostáva | Claude |
 | 2026-07-19 | db/migrations/002_email_outbox.sql, db/schema.sql | Outbox rozšírený o cieľ `email`; tabuľka `email_log` s UNIQUE (booking_id, template) ako poistka proti dvojitému odoslaniu | Claude |
 | 2026-07-19 | src/modules/email/templates.ts | Šablóny potvrdenia a storna (text + HTML), slovenské dátumy a sumy, escapovanie vstupov od zákazníka | Claude |
 | 2026-07-19 | src/modules/email/mailer.ts | Odosielanie cez HTTP API (Resend, Postmark) bez akejkoľvek knižnice; bez `EMAIL_API_KEY`/`EMAIL_FROM` je mailer inertný | Claude |
@@ -137,7 +146,9 @@ Záznam zmien v projektových dokumentoch. Formát: dátum | súbor | zmena | au
 
 ## Čo zostáva
 
-**Fáza 4:** reálna platobná brána (teraz testovacie tlačidlo, potvrdí bez platby), zákaznícky účet s históriou.
+**Fáza 4:** reálna platobná brána (teraz testovacie tlačidlo, potvrdí bez platby). Zákaznícky účet je hotový.
+
+**Stav projektu sa dá pozrieť aj v admine** – sekcia „Stav projektu" (`/admin/roadmap`). Zdroj pravdy zostáva tento súbor; pri väčšej zmene aktualizuj aj `web/src/app/admin/roadmap/data.ts`.
 
 **E-maily – hotové, čaká sa na účet u poskytovateľa.** Kód je kompletný a otestovaný; bez `EMAIL_API_KEY` a `EMAIL_FROM` sa len nič neodosiela. Zapnutie = založiť účet (Resend alebo Postmark), overiť doménu odosielateľa a doplniť tri premenné v Railway:
 

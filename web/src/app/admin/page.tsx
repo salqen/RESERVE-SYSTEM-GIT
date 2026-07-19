@@ -1,178 +1,139 @@
 export const dynamic = 'force-dynamic';
-import { Fragment } from 'react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { getCalendar, getMe, UnauthorizedError, type CalendarRoom } from '@/lib/admin-api';
+import { getMe, getOverview, UnauthorizedError } from '@/lib/admin-api';
 import AdminShell from './shell';
+import { IconArrowIn, IconArrowOut, IconAlert } from './icons';
+import { eur } from '@/lib/format';
 
-const DAY_MS = 86_400_000;
+const ATTENTION_TEXT: Record<string, (label: string) => string> = {
+  service_no_resource: (l) => `Služba „${l}" nemá priradený zdroj – zákazník neuvidí žiadny voľný termín.`,
+  resource_no_hours: (l) => `Zdroj „${l}" nemá pracovný čas – jeho služby sa nedajú rezervovať.`,
+  no_active_rooms: (l) => l,
+};
 
-function iso(d: Date): string { return d.toISOString().slice(0, 10); }
-function addDays(isoDate: string, n: number): string {
-  return iso(new Date(Date.parse(isoDate) + n * DAY_MS));
-}
-function daysBetween(from: string, to: string): number {
-  return Math.round((Date.parse(to) - Date.parse(from)) / DAY_MS);
-}
-
-/** Pondelok týždňa, do ktorého spadá dnešok. */
-function startOfWeek(): string {
-  const now = new Date();
-  const shift = (now.getUTCDay() + 6) % 7; // 0 = pondelok
-  return iso(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - shift)));
-}
-
-const WEEKDAYS = ['po', 'ut', 'st', 'št', 'pi', 'so', 'ne'];
-
-function dayLabel(isoDate: string): { name: string; num: number; weekend: boolean } {
-  const d = new Date(isoDate);
-  const idx = (d.getUTCDay() + 6) % 7;
-  return { name: WEEKDAYS[idx], num: d.getUTCDate(), weekend: idx >= 5 };
-}
-
-/**
- * Rozloží rezervácie izby na bunky mriežky: buď pruh cez N nocí, alebo
- * voľnú bunku. Rezervácie presahujúce zobrazený rozsah sa orežú.
- */
-function roomCells(room: CalendarRoom, from: string, to: string) {
-  const total = daysBetween(from, to);
-  const cells: { key: string; span: number; booking?: CalendarRoom['bookings'][number] }[] = [];
-
-  const sorted = [...room.bookings].sort((a, b) => a.checkIn.localeCompare(b.checkIn));
-  let cursor = 0;
-
-  for (const booking of sorted) {
-    const start = Math.max(0, daysBetween(from, booking.checkIn.slice(0, 10)));
-    const end = Math.min(total, daysBetween(from, booking.checkOut.slice(0, 10)));
-    if (end <= cursor || start >= total) continue;   // mimo rozsahu alebo prekryté
-
-    const barStart = Math.max(start, cursor);
-    for (let i = cursor; i < barStart; i++) cells.push({ key: `free-${room.room_id}-${i}`, span: 1 });
-    cells.push({ key: `b-${booking.bookingId}`, span: Math.max(1, end - barStart), booking });
-    cursor = end;
-  }
-  for (let i = cursor; i < total; i++) cells.push({ key: `free-${room.room_id}-${i}`, span: 1 });
-
-  return cells;
-}
-
-export default async function AdminCalendarPage({
-  searchParams,
+function Metric({
+  label, value, note, accent,
 }: {
-  searchParams: { from?: string; to?: string };
+  label: string; value: string; note?: string; accent?: boolean;
 }) {
-  const from = /^\d{4}-\d{2}-\d{2}$/.test(searchParams.from ?? '') ? searchParams.from! : startOfWeek();
-  const to = /^\d{4}-\d{2}-\d{2}$/.test(searchParams.to ?? '') ? searchParams.to! : addDays(from, 7);
+  return (
+    <div className="card metric">
+      <span className="metric-label">{label}</span>
+      <span className={`metric-value${accent ? ' accent' : ''}`}>{value}</span>
+      {note && <span className="metric-note">{note}</span>}
+    </div>
+  );
+}
 
-  let me, calendar;
+export default async function AdminOverviewPage() {
+  let me, overview;
   try {
-    [me, calendar] = await Promise.all([getMe(), getCalendar(from, to)]);
+    [me, overview] = await Promise.all([getMe(), getOverview()]);
   } catch (err) {
     if (err instanceof UnauthorizedError) redirect('/admin/login');
-    return (
-      <div className="admin-main">
-        <div className="admin-alert error">
-          Nepodarilo sa načítať kalendár: {err instanceof Error ? err.message : 'neznáma chyba'}
-        </div>
-      </div>
-    );
+    throw err;
   }
 
-  const total = daysBetween(from, to);
-  const days = Array.from({ length: total }, (_, i) => addDays(from, i));
-  const columns = `150px repeat(${total}, minmax(56px, 1fr))`;
+  const m = overview.metrics;
+  const occupancy = m.rooms_active > 0
+    ? Math.round((m.occupied_tonight / m.rooms_active) * 100)
+    : 0;
 
-  const occupiedNights = calendar.rooms.reduce(
-    (sum, room) => sum + roomCells(room, from, to)
-      .filter((c) => c.booking).reduce((n, c) => n + c.span, 0), 0);
-  const occupancy = calendar.rooms.length
-    ? Math.round((occupiedNights / (calendar.rooms.length * total)) * 100) : 0;
+  const today = new Date().toLocaleDateString('sk-SK', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  });
 
   return (
-    <AdminShell user={me.user} active="calendar" subtitle="Kalendár obsadenosti">
-          <div className="admin-head">
-            <span className="admin-title">Obsadenosť</span>
-            <Link className="admin-btn" href={`/admin?from=${addDays(from, -total)}&to=${from}`}>← Predošlé</Link>
-            <span className="admin-range">{from} – {addDays(to, -1)}</span>
-            <Link className="admin-btn" href={`/admin?from=${to}&to=${addDays(to, total)}`}>Ďalšie →</Link>
-            <div className="admin-spacer" />
-            <span className="admin-range">obsadenosť {occupancy} %</span>
-          </div>
-
-          {calendar.rooms.length === 0 && (
-            <div className="admin-alert info">Zatiaľ nie sú založené žiadne izby.</div>
-          )}
-
-          {calendar.rooms.length > 0 && (
-            <div className="cal-scroll">
-              <div className="cal" style={{ gridTemplateColumns: columns }}>
-                <div />
-                {days.map((d) => {
-                  const label = dayLabel(d);
-                  return (
-                    <div key={d} className={`cal-day${label.weekend ? ' weekend' : ''}`}>
-                      {label.name} {label.num}
-                    </div>
-                  );
-                })}
-
-                {calendar.rooms.map((room) => (
-                  <Fragment key={room.room_id}>
-                    <div className="cal-name" title={room.room_name}>{room.room_name}</div>
-                    {roomCells(room, from, to).map((cell) => (
-                      cell.booking ? (
-                        <div
-                          key={cell.key}
-                          className={`cal-bar ${cell.booking.status}`}
-                          style={{ gridColumn: `span ${cell.span}` }}
-                          title={`${cell.booking.customer ?? 'Bez mena'} · ${cell.booking.checkIn.slice(0, 10)} – ${cell.booking.checkOut.slice(0, 10)}`}
-                        >
-                          {cell.booking.status === 'hold' ? 'Hold · ' : ''}
-                          {cell.booking.customer ?? 'Bez mena'}
-                        </div>
-                      ) : (
-                        <div key={cell.key} className="cal-free" />
-                      )
-                    ))}
-                  </Fragment>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="cal-legend">
-            <span><i className="cal-swatch" style={{ background: 'var(--volt)' }} />potvrdené</span>
-            <span><i className="cal-swatch" style={{ background: 'var(--card-hover)', border: '1px dashed var(--volt-2)' }} />dočasný hold</span>
-            <span><i className="cal-swatch" style={{ background: 'var(--panel-2)' }} />voľné</span>
-          </div>
-
-          <section className="admin-section">
-            <h2>Zdroje</h2>
-            {calendar.resources.length === 0 && (
-              <p className="admin-empty">Zatiaľ nie sú založené žiadne zdroje.</p>
-            )}
-            {calendar.resources.map((r) => (
-              <div key={r.resource_id} style={{ marginBottom: 10 }}>
-                <div className="cal-name" style={{ padding: '4px 0' }}>
-                  {r.resource_name} <span style={{ color: 'var(--desc)' }}>({r.resource_type})</span>
-                </div>
-                {r.busy.length === 0 && r.timeoff.length === 0 && (
-                  <p className="admin-empty" style={{ padding: '2px 0' }}>Žiadne obsadenie v tomto rozsahu.</p>
-                )}
-                {r.busy.map((b) => (
-                  <div key={`${b.start}-${b.serviceId}`} className="cal-bar confirmed" style={{ marginBottom: 3 }}>
-                    {b.start.slice(0, 16).replace('T', ' ')} – {b.end.slice(11, 16)}
-                  </div>
-                ))}
-                {r.timeoff.map((t) => (
-                  <div key={t.start} className="cal-bar timeoff" style={{ marginBottom: 3 }}>
-                    Neprítomnosť {t.start.slice(0, 10)} – {t.end.slice(0, 10)}
-                    {t.reason ? ` · ${t.reason}` : ''}
-                  </div>
-                ))}
+    <AdminShell
+      user={me.user}
+      title={`Dobrý deň, ${me.user.name.split(' ')[0]}`}
+      subtitle={today}
+      actions={<Link className="btn primary" href="/admin/kalendar">Otvoriť kalendár</Link>}
+    >
+      {overview.attention.length > 0 && (
+        <div className="alert error" style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+          <IconAlert size={18} />
+          <div>
+            {overview.attention.map((a, i) => (
+              <div key={i} style={{ marginBottom: i < overview.attention.length - 1 ? 6 : 0 }}>
+                {(ATTENTION_TEXT[a.kind] ?? ((l: string) => l))(a.label)}
               </div>
             ))}
-          </section>
+          </div>
+        </div>
+      )}
+
+      <div className="cards">
+        <Metric
+          label="Obsadenosť dnes v noci"
+          value={`${occupancy} %`}
+          note={`${m.occupied_tonight} z ${m.rooms_active} izieb`}
+          accent
+        />
+        <Metric
+          label="Príchody dnes"
+          value={String(m.arrivals_today)}
+          note={m.departures_today > 0 ? `${m.departures_today} odchodov` : 'žiadne odchody'}
+        />
+        <Metric
+          label="Tržby tento mesiac"
+          value={eur(m.revenue_month)}
+          note={`${m.confirmed_total} potvrdených rezervácií celkovo`}
+        />
+        <Metric
+          label="Čakajúce holdy"
+          value={String(m.active_holds)}
+          note={m.unpaid_count > 0 ? `${m.unpaid_count} nezaplatených` : 'všetko zaplatené'}
+        />
+      </div>
+
+      <section className="section">
+        <h2 className="section-title">Dnes</h2>
+        <div className="cards" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
+          <div className="card">
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <IconArrowIn size={15} /> Príchody
+            </h3>
+            {overview.arrivals.length === 0 && <p className="sub">Dnes nikto neprichádza.</p>}
+            {overview.arrivals.map((a) => (
+              <div key={`${a.id}-${a.room_name}`} className="log" style={{ borderTop: 'none', paddingTop: 0 }}>
+                <Link href={`/admin/bookings/${a.id}`}><strong>{a.customer_name}</strong></Link>
+                <span className="sub">{a.room_name} · do {a.check_out.slice(0, 10)}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="card">
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <IconArrowOut size={15} /> Odchody
+            </h3>
+            {overview.departures.length === 0 && <p className="sub">Dnes nikto neodchádza.</p>}
+            {overview.departures.map((d) => (
+              <div key={`${d.id}-${d.room_name}`} className="log" style={{ borderTop: 'none', paddingTop: 0 }}>
+                <Link href={`/admin/bookings/${d.id}`}><strong>{d.customer_name}</strong></Link>
+                <span className="sub">{d.room_name} · od {d.check_in.slice(0, 10)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="section">
+        <h2 className="section-title">Synchronizácia</h2>
+        <div className="cards">
+          <Metric
+            label="Čaká na odoslanie"
+            value={String(m.outbox_pending)}
+            note="ERP a e-maily"
+          />
+          <Metric
+            label="Zlyhané po 10 pokusoch"
+            value={String(m.outbox_failed)}
+            note={m.outbox_failed > 0 ? 'vyžaduje pozornosť' : 'nič nezlyhalo'}
+          />
+        </div>
+      </section>
     </AdminShell>
   );
 }

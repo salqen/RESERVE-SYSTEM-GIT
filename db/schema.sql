@@ -113,8 +113,25 @@ CREATE TABLE customer (
   name             text NOT NULL,
   email            text NOT NULL,
   phone            text,
+  password_hash    text,             -- NULL = rezervoval bez účtu
+  last_login_at    timestamptz,
   created_at       timestamptz NOT NULL DEFAULT now()
 );
+
+-- E-mail je identita zákazníka na webe (viď db/migrations/003)
+CREATE UNIQUE INDEX idx_customer_email ON customer (lower(email));
+
+CREATE TABLE customer_session (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  customer_id  uuid NOT NULL REFERENCES customer(id) ON DELETE CASCADE,
+  token_hash   text NOT NULL UNIQUE,
+  created_at   timestamptz NOT NULL DEFAULT now(),
+  expires_at   timestamptz NOT NULL,
+  last_seen_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_customer_session_customer ON customer_session (customer_id);
+CREATE INDEX idx_customer_session_expiry ON customer_session (expires_at);
 
 -- ---------------------------------------------------------------------
 -- Rezervácie

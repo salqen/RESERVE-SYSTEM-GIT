@@ -6,7 +6,7 @@ import { loginAction, type LoginState } from '../actions';
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
-    <button className="admin-btn primary" type="submit" disabled={pending} style={{ width: '100%', justifyContent: 'center' }}>
+    <button className="btn primary" type="submit" disabled={pending} style={{ width: '100%', justifyContent: 'center' }}>
       {pending ? 'Prihlasujem…' : 'Prihlásiť sa'}
     </button>
   );
@@ -17,20 +17,20 @@ export default function LoginForm() {
 
   return (
     <form action={formAction}>
-      {state.error && <div className="admin-alert error">{state.error}</div>}
+      {state.error && <div className="alert error">{state.error}</div>}
 
-      <div className="admin-field">
-        <label className="admin-label" htmlFor="email">E-mail</label>
+      <div className="field">
+        <label className="label" htmlFor="email">E-mail</label>
         <input
-          className="admin-input" id="email" name="email" type="email"
+          className="input" id="email" name="email" type="email"
           autoComplete="username" required autoFocus
         />
       </div>
 
-      <div className="admin-field">
-        <label className="admin-label" htmlFor="password">Heslo</label>
+      <div className="field">
+        <label className="label" htmlFor="password">Heslo</label>
         <input
-          className="admin-input" id="password" name="password" type="password"
+          className="input" id="password" name="password" type="password"
           autoComplete="current-password" required
         />
       </div>

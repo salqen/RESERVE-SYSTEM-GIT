@@ -7,6 +7,7 @@ import { requireAdmin } from './modules/admin/auth';
 import { adminAuthRouter } from './modules/admin/auth-router';
 import { webhooksRouter } from './modules/webhooks/router';
 import { catalogRouter } from './modules/catalog/router';
+import { accountRouter } from './modules/customers/router';
 import { startJobs } from './jobs/cleanup';
 
 const app = express();
@@ -26,6 +27,7 @@ app.use((req, res, next) => {
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
 app.use('/catalog', catalogRouter);
+app.use('/account', accountRouter);
 app.use('/availability', availabilityRouter);
 app.use('/bookings', bookingsRouter);
 app.use('/admin/auth', adminAuthRouter);

@@ -3,6 +3,7 @@ import { config } from '../config';
 import { KeepiClient } from '../modules/erp/keepi';
 import { makeErpSender, OutboxSender } from '../modules/erp/sender';
 import { purgeExpired } from '../modules/admin/sessions';
+import { purgeExpiredCustomerSessions } from '../modules/customers/account';
 import { Mailer, resolveProvider } from '../modules/email/mailer';
 import { makeEmailSender } from '../modules/email/sender';
 
@@ -104,5 +105,6 @@ export function startJobs() {
   // Expirované admin sessions a staré záznamy o pokusoch – stačí raz za hodinu.
   setInterval(() => {
     purgeExpired(pool).catch((e) => console.error('purgeExpired:', e.message));
+    purgeExpiredCustomerSessions(pool).catch((e) => console.error('purgeCustomerSessions:', e.message));
   }, 3600_000);
 }

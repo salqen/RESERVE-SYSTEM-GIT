@@ -30,19 +30,23 @@ export default async function AdminBookingDetail({ params }: { params: { id: str
   const canCancel = booking.status === 'hold' || booking.status === 'confirmed';
 
   return (
-    <AdminShell user={me.user} active="bookings" subtitle="Detail rezervácie">
-      <div className="admin-head">
-        <Link className="admin-btn" href="/admin/bookings">← Späť</Link>
-        <span className="admin-title">{booking.customer_name}</span>
-        <span className={`admin-badge ${booking.status}`}>{STATUS_LABEL[booking.status]}</span>
-        <div className="admin-spacer" />
-        {canCancel && <CancelButton bookingId={booking.id} />}
-      </div>
+    <AdminShell
+      user={me.user}
+      title={booking.customer_name}
+      subtitle={`Rezervácia z ${dateTime(booking.created_at)}`}
+      actions={
+        <>
+          <span className={`badge ${booking.status}`}>{STATUS_LABEL[booking.status]}</span>
+          <Link className="btn" href="/admin/bookings">← Späť na zoznam</Link>
+          {canCancel && <CancelButton bookingId={booking.id} />}
+        </>
+      }
+    >
 
-      <div className="admin-cards">
-        <div className="admin-card">
+      <div className="cards">
+        <div className="card">
           <h3>Zákazník</h3>
-          <dl className="admin-dl">
+          <dl className="dl">
             <dt>E-mail</dt><dd>{booking.customer_email}</dd>
             <dt>Telefón</dt><dd>{booking.customer_phone ?? '—'}</dd>
             <dt>Vytvorená</dt><dd>{dateTime(booking.created_at)}</dd>
@@ -50,9 +54,9 @@ export default async function AdminBookingDetail({ params }: { params: { id: str
           </dl>
         </div>
 
-        <div className="admin-card">
+        <div className="card">
           <h3>Platba</h3>
-          <dl className="admin-dl">
+          <dl className="dl">
             <dt>Suma</dt><dd>{eur(booking.total_price)}</dd>
             <dt>Stav platby</dt><dd>{PAYMENT_LABEL[booking.payment_status] ?? booking.payment_status}</dd>
             <dt>Faktúra v ERP</dt><dd>{booking.erp_invoice_id ?? 'zatiaľ nevystavená'}</dd>
@@ -64,10 +68,10 @@ export default async function AdminBookingDetail({ params }: { params: { id: str
       </div>
 
       {booking.rooms.length > 0 && (
-        <section className="admin-section">
-          <h2>Izby</h2>
-          <div className="admin-table-scroll">
-            <table className="admin-table">
+        <section className="section">
+          <h2 className="section-title">Izby</h2>
+          <div className="table-scroll">
+            <table className="table">
               <thead>
                 <tr><th>Izba</th><th>Príchod</th><th>Odchod</th><th>Cena</th><th>Stav</th></tr>
               </thead>
@@ -75,10 +79,10 @@ export default async function AdminBookingDetail({ params }: { params: { id: str
                 {booking.rooms.map((r) => (
                   <tr key={`${r.room_id}-${r.check_in}`}>
                     <td>{r.name}</td>
-                    <td className="admin-sub">{r.check_in.slice(0, 10)}</td>
-                    <td className="admin-sub">{r.check_out.slice(0, 10)}</td>
+                    <td className="sub">{r.check_in.slice(0, 10)}</td>
+                    <td className="sub">{r.check_out.slice(0, 10)}</td>
                     <td>{eur(r.price)}</td>
-                    <td><span className={`admin-badge ${r.status}`}>{STATUS_LABEL[r.status] ?? r.status}</span></td>
+                    <td><span className={`badge ${r.status}`}>{STATUS_LABEL[r.status] ?? r.status}</span></td>
                   </tr>
                 ))}
               </tbody>
@@ -88,10 +92,10 @@ export default async function AdminBookingDetail({ params }: { params: { id: str
       )}
 
       {booking.services.length > 0 && (
-        <section className="admin-section">
-          <h2>Služby</h2>
-          <div className="admin-table-scroll">
-            <table className="admin-table">
+        <section className="section">
+          <h2 className="section-title">Služby</h2>
+          <div className="table-scroll">
+            <table className="table">
               <thead>
                 <tr><th>Služba</th><th>Kto/kde</th><th>Začiatok</th><th>Cena</th><th>Stav</th></tr>
               </thead>
@@ -99,10 +103,10 @@ export default async function AdminBookingDetail({ params }: { params: { id: str
                 {booking.services.map((s) => (
                   <tr key={`${s.service_id}-${s.starts_at}`}>
                     <td>{s.name}</td>
-                    <td className="admin-sub">{s.resource_name ?? '—'}</td>
-                    <td className="admin-sub">{dateTime(s.starts_at)}</td>
+                    <td className="sub">{s.resource_name ?? '—'}</td>
+                    <td className="sub">{dateTime(s.starts_at)}</td>
                     <td>{eur(s.price)}</td>
-                    <td><span className={`admin-badge ${s.status}`}>{STATUS_LABEL[s.status] ?? s.status}</span></td>
+                    <td><span className={`badge ${s.status}`}>{STATUS_LABEL[s.status] ?? s.status}</span></td>
                   </tr>
                 ))}
               </tbody>
@@ -111,14 +115,14 @@ export default async function AdminBookingDetail({ params }: { params: { id: str
         </section>
       )}
 
-      <section className="admin-section">
-        <h2>História zmien</h2>
-        {booking.audit.length === 0 && <p className="admin-empty">Žiadne záznamy.</p>}
+      <section className="section">
+        <h2 className="section-title">História zmien</h2>
+        {booking.audit.length === 0 && <p className="empty">Žiadne záznamy.</p>}
         {booking.audit.map((a, i) => (
-          <div key={`${a.created_at}-${i}`} className="admin-log">
-            <span className="admin-sub">{dateTime(a.created_at)}</span>
+          <div key={`${a.created_at}-${i}`} className="log">
+            <span className="sub">{dateTime(a.created_at)}</span>
             <strong>{a.action}</strong>
-            <span className="admin-sub">{a.actor}</span>
+            <span className="sub">{a.actor}</span>
           </div>
         ))}
       </section>

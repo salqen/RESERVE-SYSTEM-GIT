@@ -94,6 +94,28 @@ export const getCalendar = (from: string, to: string) =>
   adminReq<CalendarResponse>(
     `/calendar?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
 
+// ------------------------------------------------------------------ prehľad
+
+export interface OverviewMetrics {
+  confirmed_total: number; active_holds: number;
+  arrivals_today: number; departures_today: number;
+  occupied_tonight: number; rooms_active: number;
+  revenue_month: string; unpaid_count: number;
+  outbox_failed: number; outbox_pending: number;
+}
+export interface OverviewStay {
+  id: string; customer_name: string; room_name: string;
+  check_in: string; check_out: string;
+}
+export interface Overview {
+  metrics: OverviewMetrics;
+  arrivals: OverviewStay[];
+  departures: OverviewStay[];
+  attention: { kind: string; label: string }[];
+}
+
+export const getOverview = () => adminReq<Overview>('/overview');
+
 // ---------------------------------------------------------------- rezervácie
 
 export type BookingStatus = 'hold' | 'confirmed' | 'cancelled';

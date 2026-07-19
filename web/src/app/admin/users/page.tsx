@@ -22,14 +22,14 @@ export default async function AdminUsersPage() {
   }
 
   return (
-    <AdminShell user={me.user} active="users" subtitle="Používatelia">
-      <div className="admin-head">
-        <span className="admin-title">Používatelia</span>
-        <span className="admin-range">{list.users.length} účtov</span>
-      </div>
+    <AdminShell
+      user={me.user}
+      title="Používatelia"
+      subtitle={`${list.users.length} účtov`}
+    >
 
-      <div className="admin-table-scroll">
-        <table className="admin-table">
+      <div className="table-scroll">
+        <table className="table">
           <thead>
             <tr>
               <th>Meno</th><th>Rola</th><th>Stav</th>
@@ -41,22 +41,22 @@ export default async function AdminUsersPage() {
               <tr key={u.id}>
                 <td>
                   {u.name}
-                  <div className="admin-sub">{u.email}</div>
+                  <div className="sub">{u.email}</div>
                 </td>
-                <td className="admin-sub">{u.role === 'owner' ? 'Owner' : 'Personál'}</td>
+                <td className="sub">{u.role === 'owner' ? 'Owner' : 'Personál'}</td>
                 <td>
-                  <span className={`admin-badge ${u.active ? 'confirmed' : 'cancelled'}`}>
+                  <span className={`badge ${u.active ? 'confirmed' : 'cancelled'}`}>
                     {u.active ? 'Aktívny' : 'Deaktivovaný'}
                   </span>
                 </td>
-                <td className="admin-sub">{dateTime(u.last_login_at)}</td>
-                <td className="admin-sub">{u.active_sessions}</td>
+                <td className="sub">{dateTime(u.last_login_at)}</td>
+                <td className="sub">{u.active_sessions}</td>
                 <td>
                   {u.id !== me.user.id && (
                     <form action={toggleUserAction}>
                       <input type="hidden" name="userId" value={u.id} />
                       <input type="hidden" name="active" value={String(!u.active)} />
-                      <button className={`admin-btn${u.active ? ' danger' : ''}`} type="submit">
+                      <button className={`btn${u.active ? ' danger' : ''}`} type="submit">
                         {u.active ? 'Deaktivovať' : 'Aktivovať'}
                       </button>
                     </form>
@@ -68,8 +68,8 @@ export default async function AdminUsersPage() {
         </table>
       </div>
 
-      <section className="admin-section">
-        <h2>Nový účet</h2>
+      <section className="section">
+        <h2 className="section-title">Nový účet</h2>
         <NewUserForm />
       </section>
     </AdminShell>

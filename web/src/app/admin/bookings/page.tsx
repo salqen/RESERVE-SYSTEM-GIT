@@ -49,28 +49,27 @@ export default async function AdminBookingsPage({
   };
 
   return (
-    <AdminShell user={me.user} active="bookings" subtitle="Rezervácie">
-      <div className="admin-head">
-        <span className="admin-title">Rezervácie</span>
-        <span className="admin-range">{list.total} celkovo</span>
-      </div>
-
-      <form className="admin-filters" action="/admin/bookings" method="get">
+    <AdminShell
+      user={me.user}
+      title="Rezervácie"
+      subtitle={`${list.total} celkovo`}
+    >
+      <form className="filters" action="/admin/bookings" method="get">
         <input
-          className="admin-input" type="search" name="q" defaultValue={q}
+          className="input" type="search" name="q" defaultValue={q}
           placeholder="Meno, e-mail alebo ID rezervácie" style={{ maxWidth: 320 }}
           aria-label="Hľadať rezerváciu"
         />
         {status && <input type="hidden" name="status" value={status} />}
-        <button className="admin-btn" type="submit">Hľadať</button>
-        {(q || status) && <Link className="admin-btn" href="/admin/bookings">Zrušiť filter</Link>}
+        <button className="btn" type="submit">Hľadať</button>
+        {(q || status) && <Link className="btn" href="/admin/bookings">Zrušiť filter</Link>}
       </form>
 
-      <div className="admin-chips">
+      <div className="chips">
         {FILTERS.map((f) => (
           <Link
             key={f.key || 'all'}
-            className={`admin-chip${f.key === status ? ' on' : ''}`}
+            className={`chip${f.key === status ? ' on' : ''}`}
             href={link({ status: f.key, page: '' })}
           >
             {f.label}
@@ -79,14 +78,14 @@ export default async function AdminBookingsPage({
       </div>
 
       {list.bookings.length === 0 && (
-        <div className="admin-alert info">
+        <div className="alert info">
           {q || status ? 'Filtru nezodpovedá žiadna rezervácia.' : 'Zatiaľ nie sú žiadne rezervácie.'}
         </div>
       )}
 
       {list.bookings.length > 0 && (
-        <div className="admin-table-scroll">
-          <table className="admin-table">
+        <div className="table-scroll">
+          <table className="table">
             <thead>
               <tr>
                 <th>Zákazník</th>
@@ -102,21 +101,21 @@ export default async function AdminBookingsPage({
                 <tr key={b.id}>
                   <td>
                     <Link href={`/admin/bookings/${b.id}`}>{b.customer_name}</Link>
-                    <div className="admin-sub">{b.customer_email}</div>
+                    <div className="sub">{b.customer_email}</div>
                   </td>
-                  <td className="admin-sub">
+                  <td className="sub">
                     {b.room_count > 0 && `${b.room_count}× izba`}
                     {b.room_count > 0 && b.service_count > 0 && ', '}
                     {b.service_count > 0 && `${b.service_count}× služba`}
                   </td>
-                  <td className="admin-sub">
+                  <td className="sub">
                     {b.first_night ? b.first_night.slice(0, 10) : '—'}
                   </td>
                   <td>{eur(b.total_price)}</td>
                   <td>
-                    <span className={`admin-badge ${b.status}`}>{STATUS_LABEL[b.status]}</span>
+                    <span className={`badge ${b.status}`}>{STATUS_LABEL[b.status]}</span>
                   </td>
-                  <td className="admin-sub">{dateTime(b.created_at)}</td>
+                  <td className="sub">{dateTime(b.created_at)}</td>
                 </tr>
               ))}
             </tbody>
@@ -125,11 +124,11 @@ export default async function AdminBookingsPage({
       )}
 
       {list.totalPages > 1 && (
-        <div className="admin-head" style={{ marginTop: 14 }}>
-          {page > 1 && <Link className="admin-btn" href={link({ page: String(page - 1) })}>← Predošlé</Link>}
-          <span className="admin-range">Strana {page} z {list.totalPages}</span>
+        <div className="filters" style={{ marginTop: 16 }}>
+          {page > 1 && <Link className="btn" href={link({ page: String(page - 1) })}>← Predošlé</Link>}
+          <span className="sub">Strana {page} z {list.totalPages}</span>
           {page < list.totalPages && (
-            <Link className="admin-btn" href={link({ page: String(page + 1) })}>Ďalšie →</Link>
+            <Link className="btn" href={link({ page: String(page + 1) })}>Ďalšie →</Link>
           )}
         </div>
       )}

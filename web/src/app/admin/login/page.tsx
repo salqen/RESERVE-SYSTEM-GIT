@@ -19,8 +19,8 @@ export default async function AdminLoginPage() {
   if (alreadyLoggedIn) redirect('/admin');
 
   return (
-    <div className="admin-login-wrap">
-      <div className="admin-login">
+    <div className="login-wrap">
+      <div className="login">
         <h1>Prihlásenie</h1>
         <p className="sub">Správa rezervácií a obsadenosti</p>
         <LoginForm />

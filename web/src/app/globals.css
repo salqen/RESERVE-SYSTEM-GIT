@@ -83,3 +83,10 @@ ul.slots a {
   display: inline-block; padding: 6px 12px; border: 1px solid var(--accent);
   border-radius: 8px; color: var(--accent); text-decoration: none; font-size: 14px;
 }
+
+/* Účet zákazníka a dvojstĺpcové formuláre */
+header.site .spacer { flex: 1 1 auto; }
+.two-col { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 18px; }
+.two-col .card h2 { margin-top: 0; }
+.two-col .field { display: block; margin-bottom: 12px; }
+.two-col .field input { width: 100%; margin-top: 4px; }

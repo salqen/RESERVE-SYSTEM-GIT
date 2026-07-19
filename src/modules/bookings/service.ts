@@ -26,10 +26,16 @@ export async function createHold(input: CreateHoldInput) {
   try {
     return await withTransaction(async (client) => {
       // Zákazník: upsert podľa e-mailu (master dát je ERP, tu len kontakt)
+      // Kľúč je e-mail, nie erp_customer_id: ten je pri objednávke z webu
+      // NULL a NULL hodnoty sa v unikátnom indexe nekonfliktujú – vznikali
+      // by duplicitní zákazníci pri každej ďalšej rezervácii.
       const cust = await client.query(
         `INSERT INTO customer (erp_customer_id, name, email, phone)
          VALUES ($1,$2,$3,$4)
-         ON CONFLICT (erp_customer_id) DO UPDATE SET name = EXCLUDED.name
+         ON CONFLICT (lower(email)) DO UPDATE
+           SET name  = EXCLUDED.name,
+               phone = COALESCE(EXCLUDED.phone, customer.phone),
+               erp_customer_id = COALESCE(customer.erp_customer_id, EXCLUDED.erp_customer_id)
          RETURNING id`,
         [input.customer.erpCustomerId ?? null, input.customer.name, input.customer.email, input.customer.phone ?? null],
       );

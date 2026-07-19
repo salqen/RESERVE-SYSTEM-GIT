@@ -1,64 +1,70 @@
-import Link from 'next/link';
 import type { AdminUser } from '@/lib/admin-api';
 import { logoutAction } from './actions';
+import Sidebar from './sidebar';
+import { IconLogout } from './icons';
 
-/** Spoločný rám admin stránok: horná lišta, bočná navigácia, obsah. */
+/**
+ * Rám admin rozhrania: horná lišta, vysúvateľné bočné menu, obsah.
+ * Titulok a akcie stránky idú do hlavičky obsahu, nie do topbaru – topbar
+ * patrí identite a odhláseniu, aby sa nemiešali dve úrovne navigácie.
+ */
 export default function AdminShell({
-  user, active, subtitle, children,
+  user, title, subtitle, actions, children,
 }: {
   user: AdminUser;
-  active: 'calendar' | 'bookings' | 'catalog' | 'users';
-  subtitle: string;
+  title: string;
+  subtitle?: string;
+  actions?: React.ReactNode;
   children: React.ReactNode;
 }) {
-  const items = [
-    { key: 'calendar', href: '/admin', label: 'Kalendár', glyph: '▦' },
-    { key: 'bookings', href: '/admin/bookings', label: 'Rezervácie', glyph: '☰' },
-    { key: 'catalog', href: '/admin/catalog', label: 'Katalóg', glyph: '⌂' },
-    ...(user.role === 'owner'
-      ? [{ key: 'users', href: '/admin/users', label: 'Používatelia', glyph: '☺' }]
-      : []),
-  ] as const;
+  const initials = user.name
+    .split(/\s+/).filter(Boolean).slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '').join('') || 'A';
 
   return (
-    <>
-      <div className="admin-top">
-        <div className="admin-brand">
-          <div className="admin-mark">P</div>
-          <div>
-            <div className="admin-brand-name">Penzión <b>admin</b></div>
-            <div className="admin-brand-sub">{subtitle}</div>
-          </div>
+    <div className="admin-root">
+      <header className="topbar">
+        <div className="brand">
+          <span className="brand-mark">P</span>
+          <span className="brand-text">
+            <span className="brand-name">Penzión</span>
+            <span className="brand-sub">Správa rezervácií</span>
+          </span>
         </div>
-        <div className="admin-spacer" />
-        <div className="admin-who">
-          <b>{user.name}</b>
-          {user.email}
+
+        <div className="grow" />
+
+        <div className="who">
+          <span className="who-avatar" aria-hidden="true">{initials}</span>
+          <span className="who-text">
+            <span className="who-name">{user.name}</span>
+            <span className="who-role">{user.role === 'owner' ? 'Owner' : 'Personál'}</span>
+          </span>
         </div>
+
         <form action={logoutAction}>
-          <button className="admin-btn" type="submit">Odhlásiť</button>
+          <button className="btn ghost" type="submit">
+            <IconLogout size={17} />
+            <span className="btn-label">Odhlásiť</span>
+          </button>
         </form>
-      </div>
+      </header>
 
-      <div className="admin-body">
-        <nav className="admin-rail" aria-label="Sekcie">
-          {items.map((item) => (
-            <Link
-              key={item.key}
-              href={item.href}
-              className={item.key === active ? 'on' : ''}
-              title={item.label}
-              aria-label={item.label}
-              aria-current={item.key === active ? 'page' : undefined}
-            >
-              {item.glyph}
-            </Link>
-          ))}
-          <Link href="/" title="Zákaznícky web" aria-label="Zákaznícky web">↗</Link>
-        </nav>
+      <div className="shell">
+        <Sidebar role={user.role} />
 
-        <main className="admin-main">{children}</main>
+        <main className="content">
+          <div className="page-head">
+            <div>
+              <h1 className="page-title">{title}</h1>
+              {subtitle && <p className="page-sub">{subtitle}</p>}
+            </div>
+            {actions && <div className="page-actions">{actions}</div>}
+          </div>
+
+          {children}
+        </main>
       </div>
-    </>
+    </div>
   );
 }

@@ -4,12 +4,14 @@ import { pool } from '../../db';
 import { adminBookingsRouter } from './bookings-router';
 import { adminUsersRouter } from './users-router';
 import { adminCatalogRouter } from './catalog-router';
+import { adminOverviewRouter } from './overview-router';
 
 export const adminRouter = Router();
 
 adminRouter.use('/bookings', adminBookingsRouter);
 adminRouter.use('/users', adminUsersRouter);
 adminRouter.use('/catalog', adminCatalogRouter);
+adminRouter.use('/overview', adminOverviewRouter);
 
 /**
  * GET /admin/calendar?from=2026-08-01&to=2026-08-08[&propertyId=...]

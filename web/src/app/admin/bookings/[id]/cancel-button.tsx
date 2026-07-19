@@ -8,11 +8,11 @@ function Confirm({ onBack }: { onBack: () => void }) {
   const { pending } = useFormStatus();
   return (
     <>
-      <span className="admin-range">Naozaj zrušiť? Termín sa uvoľní.</span>
-      <button className="admin-btn danger" type="submit" disabled={pending}>
+      <span className="sub">Naozaj zrušiť? Termín sa uvoľní.</span>
+      <button className="btn danger" type="submit" disabled={pending}>
         {pending ? 'Ruším…' : 'Áno, zrušiť'}
       </button>
-      <button className="admin-btn" type="button" onClick={onBack} disabled={pending}>
+      <button className="btn" type="button" onClick={onBack} disabled={pending}>
         Späť
       </button>
     </>
@@ -28,7 +28,7 @@ export default function CancelButton({ bookingId }: { bookingId: string }) {
 
   if (!confirming) {
     return (
-      <button className="admin-btn danger" type="button" onClick={() => setConfirming(true)}>
+      <button className="btn danger" type="button" onClick={() => setConfirming(true)}>
         Zrušiť rezerváciu
       </button>
     );
