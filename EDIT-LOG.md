@@ -41,6 +41,9 @@ Záznam zmien v projektových dokumentoch. Formát: dátum | súbor | zmena | au
 | 2026-07-19 | package.json, railway.toml, scripts/init-db.mjs | OPRAVA: v koreni repa boli ešte staré „web-wrapper" package.json a railway.toml – preto sa root služba buildovala ako web, nie backend. Nahradené backend verziami (build `npm ci && npm run build`, pre-deploy `npm run db:init`, start `npm start`, healthcheck `/health`) + doplnený chýbajúci scripts/init-db.mjs | Claude |
 | 2026-07-19 | Railway | Založený projekt (lively-tranquility), služba RESERVE-SYSTEM-GIT z GitHubu; prvý build (commit „1") padol na @backend type importe, po pushi be3651f build OK – Deployment successful | Samuel + Claude |
 
+| 2026-07-19 | web/src/app/page.tsx, layout.tsx, globals.css | Web: úvodná stránka zobrazuje voľné izby pre najbližší termín (predvyplnené dátumy), sekcie Ubytovanie/Služby majú funkčné kotvy v menu | Claude |
+| 2026-07-19 | src/modules/admin/auth.ts, src/index.ts, src/config.ts, .env.example | BEZPEČNOSŤ: `/admin/*` bolo verejne prístupné bez akejkoľvek autentifikácie. Pridaný Bearer token (`ADMIN_TOKEN`) s timing-safe porovnaním, fail-closed (bez tokenu 503, nie otvorené) | Claude |
+| 2026-07-19 | tests/admin-auth.test.ts | Unit testy admin autentifikácie (parsovanie hlavičky, timing-safe porovnanie, fail-closed, 401/503) | Claude |
 | 2026-07-19 | Railway | Deploy DOKONČENÝ: Postgres + backend (koreň repa, doména, PORT 8080, DATABASE_URL, WEB_ORIGIN) + web (Root Directory `web`, PORT 3000, API_URL). Schéma DB inicializovaná pre-deploy hookom, /health a /catalog odpovedajú, web beží | Samuel + Claude |
 
 ---

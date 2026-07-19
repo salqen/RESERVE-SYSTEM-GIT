@@ -10,4 +10,6 @@ export const config = {
   serviceManagerWebhookSecret: process.env.SERVICE_MANAGER_WEBHOOK_SECRET ?? '',
   // Fáza 4 – zákaznícky web (CORS)
   webOrigin: process.env.WEB_ORIGIN ?? 'http://localhost:3000',
+  // Admin API – zdieľaný token. Prázdne = admin API zavreté (fail-closed).
+  adminToken: process.env.ADMIN_TOKEN ?? '',
 };
