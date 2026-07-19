@@ -1,23 +1,21 @@
 /**
- * Autentifikácia admin API.
+ * Autentifikácia admin API – session tokeny nad účtami v `admin_user`.
  *
- * Zdieľaný token v hlavičke `Authorization: Bearer <ADMIN_TOKEN>`.
- * Zámerne jednoduché – admin je zatiaľ interné rozhranie bez používateľských
- * účtov. Keď pribudne admin UI s prihlásením, toto sa nahradí sessions/JWT.
- *
- * Princíp fail-closed: ak ADMIN_TOKEN nie je nastavený, admin API je zavreté
- * (503), nie otvorené. Chýbajúca konfigurácia nesmie znamenať verejný prístup.
+ * Klient (Next.js admin) drží token v httpOnly cookie a posiela ho backendu
+ * v hlavičke `Authorization: Bearer <session-token>`. Token je náhodných
+ * 32 bajtov, v DB uložený len ako SHA-256 hash.
  */
-import { timingSafeEqual } from 'node:crypto';
 import type { NextFunction, Request, Response } from 'express';
-import { config } from '../../config';
+import { pool } from '../../db';
+import { resolveSession, type AdminUser } from './sessions';
 
-/** Porovnanie odolné voči timing útoku (aj pri rôznych dĺžkach). */
-export function safeEqual(a: string, b: string): boolean {
-  const bufA = Buffer.from(a, 'utf8');
-  const bufB = Buffer.from(b, 'utf8');
-  if (bufA.length !== bufB.length) return false;
-  return timingSafeEqual(bufA, bufB);
+declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  namespace Express {
+    interface Request {
+      adminUser?: AdminUser;
+    }
+  }
 }
 
 /** Vytiahne token z hlavičky `Authorization: Bearer <token>`. */
@@ -27,19 +25,34 @@ export function bearerToken(header: string | undefined): string | null {
   return match ? match[1].trim() : null;
 }
 
-export function requireAdmin(req: Request, res: Response, next: NextFunction): void {
-  if (!config.adminToken) {
-    console.error('ADMIN_TOKEN nie je nastavený – admin API je zavreté.');
-    res.status(503).json({ error: 'Admin API nie je nakonfigurované' });
-    return;
-  }
-
+/** Chráni admin endpointy. Bez platnej session vracia 401. */
+export async function requireAdmin(
+  req: Request, res: Response, next: NextFunction,
+): Promise<void> {
   const token = bearerToken(req.header('authorization'));
-  if (!token || !safeEqual(token, config.adminToken)) {
-    res.setHeader('WWW-Authenticate', 'Bearer');
+  if (!token) {
     res.status(401).json({ error: 'Neautorizovaný prístup' });
     return;
   }
 
+  try {
+    const user = await resolveSession(pool, token);
+    if (!user) {
+      res.status(401).json({ error: 'Neplatná alebo vypršaná session' });
+      return;
+    }
+    req.adminUser = user;
+    next();
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** Obmedzí endpoint na rolu owner (správa používateľov a pod.). */
+export function requireOwner(req: Request, res: Response, next: NextFunction): void {
+  if (req.adminUser?.role !== 'owner') {
+    res.status(403).json({ error: 'Vyžaduje sa rola owner' });
+    return;
+  }
   next();
 }

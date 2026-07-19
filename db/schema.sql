@@ -216,3 +216,44 @@ CREATE INDEX idx_outbox_pending ON sync_outbox (next_retry) WHERE status = 'pend
 CREATE INDEX idx_booking_hold ON booking (hold_expires_at) WHERE status = 'hold';
 CREATE INDEX idx_booking_room_room ON booking_room (room_id);
 CREATE INDEX idx_booking_service_resource ON booking_service (resource_id);
+
+-- ---------------------------------------------------------------------
+-- Admin účty a sessions (viď db/migrations/001_admin_users.sql)
+-- Heslá: scrypt hash. Session token: v DB len SHA-256 hash.
+-- ---------------------------------------------------------------------
+
+CREATE TABLE admin_user (
+  id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  email          text NOT NULL,
+  name           text NOT NULL,
+  password_hash  text NOT NULL,
+  role           text NOT NULL DEFAULT 'staff' CHECK (role IN ('owner','staff')),
+  active         boolean NOT NULL DEFAULT true,
+  created_at     timestamptz NOT NULL DEFAULT now(),
+  last_login_at  timestamptz
+);
+
+CREATE UNIQUE INDEX idx_admin_user_email ON admin_user (lower(email));
+
+CREATE TABLE admin_session (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id      uuid NOT NULL REFERENCES admin_user(id) ON DELETE CASCADE,
+  token_hash   text NOT NULL UNIQUE,
+  created_at   timestamptz NOT NULL DEFAULT now(),
+  expires_at   timestamptz NOT NULL,
+  last_seen_at timestamptz NOT NULL DEFAULT now(),
+  user_agent   text
+);
+
+CREATE INDEX idx_admin_session_user ON admin_session (user_id);
+CREATE INDEX idx_admin_session_expiry ON admin_session (expires_at);
+
+CREATE TABLE admin_login_attempt (
+  id          bigserial PRIMARY KEY,
+  email       text NOT NULL,
+  ip          text,
+  success     boolean NOT NULL,
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_admin_login_attempt_recent ON admin_login_attempt (lower(email), created_at DESC);

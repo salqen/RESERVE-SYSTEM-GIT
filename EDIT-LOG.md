@@ -43,6 +43,14 @@ Záznam zmien v projektových dokumentoch. Formát: dátum | súbor | zmena | au
 
 | 2026-07-19 | web/src/app/page.tsx, layout.tsx, globals.css | Web: úvodná stránka zobrazuje voľné izby pre najbližší termín (predvyplnené dátumy), sekcie Ubytovanie/Služby majú funkčné kotvy v menu | Claude |
 | 2026-07-19 | src/modules/admin/auth.ts, src/index.ts, src/config.ts, .env.example | BEZPEČNOSŤ: `/admin/*` bolo verejne prístupné bez akejkoľvek autentifikácie. Pridaný Bearer token (`ADMIN_TOKEN`) s timing-safe porovnaním, fail-closed (bez tokenu 503, nie otvorené) | Claude |
+| 2026-07-19 | scripts/init-db.mjs, db/migrations/ | Migračný mechanizmus: tabuľka `schema_migration`, migrácie z `db/migrations/*.sql` v samostatných transakciách; čerstvá DB dostane baseline zo `schema.sql` | Claude |
+| 2026-07-19 | db/migrations/001_admin_users.sql, db/schema.sql | Tabuľky `admin_user`, `admin_session`, `admin_login_attempt`; e-mail unikátny case-insensitive | Claude |
+| 2026-07-19 | src/modules/admin/password.ts | Hashovanie hesiel cez scrypt (bez natívnych závislostí), parametre uložené v hashi, timing-safe overenie | Claude |
+| 2026-07-19 | src/modules/admin/sessions.ts | Prihlásenie, session tokeny (v DB len SHA-256 hash), expirácia 12 h, rate limit 5 pokusov / 15 min, rovnaká hláška pri neznámom e-maile aj zlom hesle | Claude |
+| 2026-07-19 | src/modules/admin/auth.ts, auth-router.ts, src/index.ts | ADMIN_TOKEN nahradený účtami; POST /admin/auth/login, /logout, GET /admin/auth/me; requireAdmin overuje session | Claude |
+| 2026-07-19 | scripts/create-admin.mjs, package.json | `npm run admin:create` – založenie/úprava správcu, heslo cez skrytý vstup alebo ADMIN_PASSWORD (nikdy v argumentoch) | Claude |
+| 2026-07-19 | src/jobs/cleanup.ts | Hodinové upratovanie expirovaných sessions a starých záznamov o pokusoch | Claude |
+| 2026-07-19 | tests/password.test.ts, tests/admin-auth.db.test.ts | Testy hesiel a autentifikácie (PGlite): prihlásenie, zlé heslo, uzamknutie, expirácia, odhlásenie, deaktivovaný účet | Claude |
 | 2026-07-19 | tests/admin-auth.test.ts | Unit testy admin autentifikácie (parsovanie hlavičky, timing-safe porovnanie, fail-closed, 401/503) | Claude |
 | 2026-07-19 | Railway | Deploy DOKONČENÝ: Postgres + backend (koreň repa, doména, PORT 8080, DATABASE_URL, WEB_ORIGIN) + web (Root Directory `web`, PORT 3000, API_URL). Schéma DB inicializovaná pre-deploy hookom, /health a /catalog odpovedajú, web beží | Samuel + Claude |
 

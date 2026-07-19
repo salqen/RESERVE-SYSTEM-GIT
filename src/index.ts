@@ -4,6 +4,7 @@ import { availabilityRouter } from './modules/availability/router';
 import { bookingsRouter } from './modules/bookings/router';
 import { adminRouter } from './modules/admin/router';
 import { requireAdmin } from './modules/admin/auth';
+import { adminAuthRouter } from './modules/admin/auth-router';
 import { webhooksRouter } from './modules/webhooks/router';
 import { catalogRouter } from './modules/catalog/router';
 import { startJobs } from './jobs/cleanup';
@@ -27,6 +28,7 @@ app.get('/health', (_req, res) => res.json({ ok: true }));
 app.use('/catalog', catalogRouter);
 app.use('/availability', availabilityRouter);
 app.use('/bookings', bookingsRouter);
+app.use('/admin/auth', adminAuthRouter);
 app.use('/admin', requireAdmin, adminRouter);
 app.use('/webhooks', webhooksRouter);
 
