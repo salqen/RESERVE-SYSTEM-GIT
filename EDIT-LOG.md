@@ -43,6 +43,9 @@ Záznam zmien v projektových dokumentoch. Formát: dátum | súbor | zmena | au
 
 | 2026-07-19 | web/src/app/page.tsx, layout.tsx, globals.css | Web: úvodná stránka zobrazuje voľné izby pre najbližší termín (predvyplnené dátumy), sekcie Ubytovanie/Služby majú funkčné kotvy v menu | Claude |
 | 2026-07-19 | src/modules/admin/auth.ts, src/index.ts, src/config.ts, .env.example | BEZPEČNOSŤ: `/admin/*` bolo verejne prístupné bez akejkoľvek autentifikácie. Pridaný Bearer token (`ADMIN_TOKEN`) s timing-safe porovnaním, fail-closed (bez tokenu 503, nie otvorené) | Claude |
+| 2026-07-19 | web/src/app/(site)/, web/src/app/layout.tsx | Route group: zákaznícky web presunutý do `(site)` s vlastnou hlavičkou, koreňový layout drží len html/body (admin má vlastný vzhľad) | Claude |
+| 2026-07-19 | web/src/app/admin/ | Admin UI: prihlásenie + kalendár obsadenosti (mriežka izby × dni, pruhy rezervácií, sekcia zdrojov, navigácia po týždňoch, obsadenosť v %); tmavý štýl podľa COMPONENT SITE / component-library-v2.html | Claude |
+| 2026-07-19 | web/src/lib/admin-session.ts, admin-api.ts | Session token v httpOnly cookie (secure, sameSite lax, path /admin); admin API klient beží len na serveri | Claude |
 | 2026-07-19 | scripts/init-db.mjs, db/migrations/ | Migračný mechanizmus: tabuľka `schema_migration`, migrácie z `db/migrations/*.sql` v samostatných transakciách; čerstvá DB dostane baseline zo `schema.sql` | Claude |
 | 2026-07-19 | db/migrations/001_admin_users.sql, db/schema.sql | Tabuľky `admin_user`, `admin_session`, `admin_login_attempt`; e-mail unikátny case-insensitive | Claude |
 | 2026-07-19 | src/modules/admin/password.ts | Hashovanie hesiel cez scrypt (bez natívnych závislostí), parametre uložené v hashi, timing-safe overenie | Claude |
