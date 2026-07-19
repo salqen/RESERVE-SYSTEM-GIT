@@ -32,3 +32,9 @@ Záznam zmien v projektových dokumentoch. Formát: dátum | súbor | zmena | au
 | 2026-07-19 | src/modules/bookings/types.ts | Fáza 4: zdieľané typy booking flow vyčlenené bez runtime závislostí (type-only import z webu) | Claude |
 | 2026-07-19 | web/ | Fáza 4: zákaznícky web (Next.js 14 App Router, TS) – katalóg, voľné izby, sloty služieb, hold → checkout → confirm, detail rezervácie + samoobslužné storno; server actions, API_URL len na serveri | Claude |
 | 2026-07-19 | web/src/lib/api.ts | Fáza 4: typovaný API klient, typy zdieľané s backendom cez @backend/* alias | Claude |
+| 2026-07-19 | RESERVE-SYSTEM-GIT/ | Layout repa: backend priamo v koreni (src/, db/, tests/, scripts/), web/ ako podzložka; zložka rezervacny-system/ z repa odstránená | Samuel + Claude |
+| 2026-07-19 | scripts/init-db.mjs | Railway: idempotentná inicializácia DB schémy (pre-deploy), db:init cez node (netreba psql) | Claude |
+| 2026-07-19 | railway.toml, web/railway.toml | Railway config oboch služieb (build, start, healthcheck, pre-deploy db:init) | Claude |
+| 2026-07-19 | web/src/lib/booking-types.ts | Web osamostatnený: lokálna kópia typov booking flow (Root Directory = web nemôže siahať mimo zložky) | Claude |
+| 2026-07-19 | web/src/app/*.tsx | force-dynamic na dátových stránkach (žiadny prerender s fetchom počas buildu) | Claude |
+| 2026-07-19 | package-lock.json, web/package-lock.json | Lockfiles pre reprodukovateľný build (npm ci) | Claude |

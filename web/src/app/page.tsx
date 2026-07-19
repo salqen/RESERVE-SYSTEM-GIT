@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import Link from 'next/link';
 import { getCatalog } from '@/lib/api';
 import { eur, minutesLabel } from '@/lib/format';

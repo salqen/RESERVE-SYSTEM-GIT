@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { getCatalog } from '@/lib/api';
 import { eur, dateLabel, dateTimeLabel, nightsBetween } from '@/lib/format';
 import { createHoldAction } from './actions';

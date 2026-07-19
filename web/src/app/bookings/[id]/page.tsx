@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { getBooking } from '@/lib/api';
 import { eur, dateLabel, dateTimeLabel } from '@/lib/format';
 import { cancelBookingAction } from '../../book/actions';

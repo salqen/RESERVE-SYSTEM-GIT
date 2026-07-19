@@ -6,9 +6,9 @@
  * (@backend/* → ../rezervacny-system/src/*), takže kontrakt drží kompilátor.
  */
 import 'server-only';
-import type { CreateHoldInput } from '@backend/modules/bookings/types';
+import type { CreateHoldInput } from './booking-types';
 
-export type { CreateHoldInput, RoomItem, ServiceItem } from '@backend/modules/bookings/types';
+export type { CreateHoldInput, RoomItem, ServiceItem } from './booking-types';
 
 const API_URL = process.env.API_URL ?? 'http://localhost:3001';
 

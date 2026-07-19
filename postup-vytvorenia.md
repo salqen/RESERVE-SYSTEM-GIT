@@ -62,6 +62,7 @@ Najrizikovejšia časť, robiť ako prvú:
   - **Zostáva vo Fáze 4:** reálna platobná brána (zatiaľ testovacie tlačidlo), potvrdzovacie e-maily, zákaznícky účet s históriou (vyžaduje auth) – detail rezervácie zatiaľ funguje ako samoobslužný odkaz.
 - **Overené:** backend `tsc --noEmit` bez chýb + `npm test` = 26/26 OK; web `tsc --noEmit` bez chýb.
 - **Ďalej:** dokončiť Fázu 4 (platobná brána, e-maily, účet), potom Fáza 5 (prevádzka).
-- **Git:** HLAVNÝ repozitár = `RESERVE-SYSTEM-GIT/` (GitHub: salqen/RESERVE-SYSTEM-GIT, Vercel deploy z main). Pre Vercel treba v Project Settings nastaviť **Root Directory = `web`** (repo root nie je Next.js app – preto 404); backend (Express + joby) potrebuje vlastný hosting (Railway/Fly/Render) alebo serverless úpravu.
+- **Git:** HLAVNÝ repozitár = `RESERVE-SYSTEM-GIT/` (GitHub: salqen/RESERVE-SYSTEM-GIT). Layout: backend v koreni repa, web v `web/`. Vývoj prebieha priamo v repe; zložky `rezervacny-system/` a `web/` v nadradenom priečinku RESERVE SYSTEM sú už len archív.
+- **Deploy:** Railway – 3 služby z jedného repa: Postgres, backend (root, `railway.toml`, pre-deploy `npm run db:init`), web (`web/`, `web/railway.toml`, env `API_URL`). Detailný návod v README.
 
 > Pozn.: pridaný dev dependency `@electric-sql/pglite`; po pull-e spusti `npm install`.

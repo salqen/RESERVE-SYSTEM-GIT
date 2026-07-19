@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import Link from 'next/link';
 import { getFreeRooms } from '@/lib/api';
 import { eur, dateLabel, nightsBetween } from '@/lib/format';
