@@ -28,7 +28,13 @@ export default async function AdminUsersPage() {
       subtitle={`${list.users.length} účtov`}
     >
 
-      <div className="table-scroll">
+      <div className="panel">
+        <div className="panel-head">
+          <span className="panel-title">Účty</span>
+          <span className="grow" />
+          <span className="panel-note">{list.users.length}</span>
+        </div>
+        <div className="table-scroll panel-body flush">
         <table className="table">
           <thead>
             <tr>
@@ -66,6 +72,7 @@ export default async function AdminUsersPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       <section className="section">

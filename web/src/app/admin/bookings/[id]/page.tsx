@@ -43,8 +43,8 @@ export default async function AdminBookingDetail({ params }: { params: { id: str
       }
     >
 
-      <div className="cards">
-        <div className="card">
+      <div className="bento">
+        <div className="card t6">
           <h3>Zákazník</h3>
           <dl className="dl">
             <dt>E-mail</dt><dd>{booking.customer_email}</dd>
@@ -54,7 +54,7 @@ export default async function AdminBookingDetail({ params }: { params: { id: str
           </dl>
         </div>
 
-        <div className="card">
+        <div className="card t6">
           <h3>Platba</h3>
           <dl className="dl">
             <dt>Suma</dt><dd>{eur(booking.total_price)}</dd>
@@ -69,8 +69,9 @@ export default async function AdminBookingDetail({ params }: { params: { id: str
 
       {booking.rooms.length > 0 && (
         <section className="section">
-          <h2 className="section-title">Izby</h2>
-          <div className="table-scroll">
+          <div className="panel">
+            <div className="panel-head"><span className="panel-title">Izby</span></div>
+            <div className="table-scroll panel-body flush">
             <table className="table">
               <thead>
                 <tr><th>Izba</th><th>Príchod</th><th>Odchod</th><th>Cena</th><th>Stav</th></tr>
@@ -87,14 +88,16 @@ export default async function AdminBookingDetail({ params }: { params: { id: str
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         </section>
       )}
 
       {booking.services.length > 0 && (
         <section className="section">
-          <h2 className="section-title">Služby</h2>
-          <div className="table-scroll">
+          <div className="panel">
+            <div className="panel-head"><span className="panel-title">Služby</span></div>
+            <div className="table-scroll panel-body flush">
             <table className="table">
               <thead>
                 <tr><th>Služba</th><th>Kto/kde</th><th>Začiatok</th><th>Cena</th><th>Stav</th></tr>
@@ -111,20 +114,27 @@ export default async function AdminBookingDetail({ params }: { params: { id: str
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         </section>
       )}
 
       <section className="section">
-        <h2 className="section-title">História zmien</h2>
-        {booking.audit.length === 0 && <p className="empty">Žiadne záznamy.</p>}
-        {booking.audit.map((a, i) => (
-          <div key={`${a.created_at}-${i}`} className="log">
-            <span className="sub">{dateTime(a.created_at)}</span>
-            <strong>{a.action}</strong>
-            <span className="sub">{a.actor}</span>
+        <div className="panel">
+          <div className="panel-head"><span className="panel-title">História zmien</span></div>
+          <div className="panel-body flush">
+            {booking.audit.length === 0 && <p className="empty">Žiadne záznamy.</p>}
+            <div className="rows">
+              {booking.audit.map((a, i) => (
+                <div key={`${a.created_at}-${i}`} className="row-line">
+                  <strong style={{ color: 'var(--volt-2)', fontWeight: 600 }}>{a.action}</strong>
+                  <span className="sub">{a.actor}</span>
+                  <span className="right sub">{dateTime(a.created_at)}</span>
+                </div>
+              ))}
+            </div>
           </div>
-        ))}
+        </div>
       </section>
     </AdminShell>
   );

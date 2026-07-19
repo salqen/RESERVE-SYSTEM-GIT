@@ -10,9 +10,9 @@
   --bg: #0a0604;
   --panel: #120b07;
   --panel-2: #160d08;
-  --card: #17100a;
-  --card-hover: #1f150c;
-  --border: #291c12;
+  --card: #1b130c;
+  --card-hover: #241a10;
+  --border: #33241a;
   --border-strong: #3a2a1a;
   --text: #f4ece6;
   --muted: #9a8d81;
@@ -178,24 +178,71 @@
 
 /* --------------------------------------------------------------- karty */
 
-.admin .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+/* Bento mriežka: 12 stĺpcov, veľkosť dlaždice = dôležitosť údaja.
+   Na tablete 6 stĺpcov, na mobile jeden – dlaždice sa poskladajú pod seba. */
+.admin .bento { display: grid; grid-template-columns: repeat(12, 1fr); gap: 14px; align-items: start; }
+.admin .t3 { grid-column: span 3; }
+.admin .t4 { grid-column: span 4; }
+.admin .t5 { grid-column: span 5; }
+.admin .t6 { grid-column: span 6; }
+.admin .t7 { grid-column: span 7; }
+.admin .t8 { grid-column: span 8; }
+.admin .t12 { grid-column: span 12; }
+
+.admin .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+
 .admin .card {
   background: var(--card); border: 1px solid var(--border);
-  border-radius: var(--radius-lg); padding: 15px 16px;
+  border-radius: var(--radius-lg); padding: 16px 18px;
 }
 .admin .card h3, .admin .card h4 {
   font-size: 11px; text-transform: uppercase; letter-spacing: .07em;
-  color: var(--desc); font-weight: 700; margin-bottom: 10px;
+  color: var(--desc); font-weight: 700; margin-bottom: 12px;
 }
 
-.admin .metric { display: flex; flex-direction: column; gap: 5px; }
+/* Panel = karta s hlavičkou a vlastným obsahom (tabuľka, zoznam, formulár) */
+.admin .panel {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); overflow: hidden;
+}
+.admin .panel-head {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 14px 18px; border-bottom: 1px solid var(--border);
+}
+.admin .panel-title { font-size: 13.5px; font-weight: 600; }
+.admin .panel-note { font-size: 12px; color: var(--muted); }
+.admin .panel-body { padding: 16px 18px; }
+.admin .panel-body.flush { padding: 6px 18px 14px; }
+
+.admin .metric { display: flex; flex-direction: column; gap: 6px; }
 .admin .metric-label { font-size: 12px; color: var(--muted); }
 .admin .metric-value {
   font-family: "Space Grotesk", Inter, sans-serif;
-  font-size: 26px; font-weight: 700; line-height: 1.1; letter-spacing: -.02em;
+  font-size: 28px; font-weight: 700; line-height: 1.05; letter-spacing: -.02em;
 }
 .admin .metric-value.accent { color: var(--volt-2); }
 .admin .metric-note { font-size: 11.5px; color: var(--desc); }
+
+/* Stĺpcový graf obsadenosti – čisté CSS, žiadna knižnica */
+.admin .bars { display: flex; align-items: flex-end; gap: 6px; height: 132px; margin-top: 6px; }
+.admin .bar-col { flex: 1 1 0; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; gap: 6px; }
+.admin .bar {
+  border-radius: 5px 5px 2px 2px; background: var(--volt-soft);
+  border: 1px solid rgba(255, 106, 0, .3); min-height: 3px;
+}
+.admin .bar.full { background: var(--volt); border-color: var(--volt); }
+.admin .bar-label { font-size: 10px; color: var(--desc); text-align: center; }
+.admin .bar-col.today .bar-label { color: var(--volt-2); font-weight: 700; }
+
+/* Zoznam v dlaždici – riadok s menom vľavo a údajom vpravo */
+.admin .rows { display: flex; flex-direction: column; }
+.admin .row-line {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 0; border-top: 1px solid var(--border); font-size: 13px;
+}
+.admin .row-line:first-child { border-top: none; }
+.admin .row-line .right { margin-left: auto; text-align: right; }
+.admin .row-line a:hover { color: var(--volt-2); }
 
 .admin .dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: 13px; margin: 0; }
 .admin .dl dt { color: var(--muted); white-space: nowrap; }
@@ -306,6 +353,18 @@
 .admin .login .sub { margin-bottom: 22px; }
 
 /* ------------------------------------------------------------ mobil */
+
+@media (max-width: 1180px) {
+  .admin .bento { grid-template-columns: repeat(6, 1fr); }
+  .admin .t3 { grid-column: span 3; }
+  .admin .t4, .admin .t5 { grid-column: span 6; }
+  .admin .t6, .admin .t7, .admin .t8, .admin .t12 { grid-column: span 6; }
+}
+
+@media (max-width: 700px) {
+  .admin .bento { grid-template-columns: 1fr; }
+  .admin .bento > * { grid-column: 1 / -1 !important; }
+}
 
 @media (max-width: 860px) {
   .admin .side { flex-basis: var(--side-w-collapsed); width: var(--side-w-collapsed); }

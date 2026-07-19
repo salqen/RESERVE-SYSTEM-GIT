@@ -67,11 +67,28 @@ adminOverviewRouter.get('/', async (_req, res, next) => {
       `),
     ]);
 
+    // Obsadenosť na najbližších 14 dní – podklad pre stĺpcový graf.
+    const week = await pool.query(`
+      WITH days AS (
+        SELECT generate_series(current_date, current_date + 13, '1 day')::date AS day
+      )
+      SELECT d.day,
+             (SELECT count(*) FROM booking_room br
+               WHERE br.status IN ('confirmed','hold') AND br.stay @> d.day)::int AS occupied
+        FROM days d ORDER BY d.day`);
+
+    const recent = await pool.query(`
+      SELECT b.id, b.status, b.total_price, b.created_at, c.name AS customer_name
+        FROM booking b JOIN customer c ON c.id = b.customer_id
+       ORDER BY b.created_at DESC LIMIT 6`);
+
     res.json({
       metrics: metrics.rows[0],
       arrivals: arrivals.rows,
       departures: departures.rows,
       attention: attention.rows,
+      week: week.rows,
+      recent: recent.rows,
     });
   } catch (err) {
     next(err);

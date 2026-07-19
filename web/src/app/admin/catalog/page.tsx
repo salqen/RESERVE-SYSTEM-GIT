@@ -27,6 +27,22 @@ function ToggleButton({ id, kind, active }: { id: string; kind: string; active: 
   );
 }
 
+/** Hlavička položky: názov, stav a akcia. Detaily idú do riadkov pod tým. */
+function ItemHead({
+  name, badge, badgeOk, action,
+}: {
+  name: string; badge: string; badgeOk: boolean; action: React.ReactNode;
+}) {
+  return (
+    <div className="item-head" style={{ marginBottom: 10 }}>
+      <strong>{name}</strong>
+      <span className={`badge ${badgeOk ? 'confirmed' : 'cancelled'}`}>{badge}</span>
+      <span className="grow" />
+      {action}
+    </div>
+  );
+}
+
 export default async function AdminCatalogPage() {
   let me, catalog;
   try {
@@ -43,129 +59,167 @@ export default async function AdminCatalogPage() {
   const pricesFor = (roomId: string) => catalog.prices.filter((p) => p.room_id === roomId);
   const activeResources = catalog.resources.filter((r) => r.active);
 
+  const roomsOn = catalog.rooms.filter((r) => r.active).length;
+  const servicesOn = catalog.services.filter((s) => s.active).length;
+
   return (
     <AdminShell
       user={me.user}
       title="Katalóg"
-      subtitle={`${catalog.rooms.filter((r) => r.active).length} izieb a ${catalog.services.filter((s) => s.active).length} služieb je zverejnených na webe`}
+      subtitle={`${roomsOn} izieb a ${servicesOn} služieb je zverejnených na webe`}
     >
-      <section className="section" style={{ marginTop: 0 }}>
-        <h2 className="section-title">Izby</h2>
-        {catalog.rooms.length === 0 && <p className="empty">Zatiaľ žiadne izby.</p>}
-
-        {catalog.rooms.map((r) => {
-          const seasons = pricesFor(r.id);
-          return (
-            <div key={r.id} className="item">
-              <div className="item-head">
-                <div>
-                  <strong>{r.name}</strong>{' '}
-                  <span className="sub">
-                    {r.room_type}, {r.capacity} os. · {eur(r.price_night)}/noc
-                    {r.min_nights > 1 ? ` · min. ${r.min_nights} nocí` : ''} · {policyName(r.cancellation_policy_id)}
-                  </span>
-                </div>
-                <div className="grow" />
-                <span className={`badge ${r.active ? 'confirmed' : 'cancelled'}`}>
-                  {r.active ? 'Na webe' : 'Skrytá'}
-                </span>
-                <ToggleButton id={r.id} kind="room" active={r.active} />
-              </div>
-
-              {seasons.length > 0 && (
-                <div className="seasons">
-                  {seasons.map((p) => (
-                    <span key={p.id} className="season">
-                      {p.season_from.slice(0, 10)} – {p.season_to.slice(0, 10)}: {eur(p.price_night)}
-                      <form action={deletePriceRuleAction} style={{ display: 'inline' }}>
-                        <input type="hidden" name="ruleId" value={p.id} />
-                        <button className="x" type="submit" aria-label="Zmazať sezónu">×</button>
-                      </form>
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              <EditRoomForm room={r} policies={catalog.policies} prices={seasons} />
-            </div>
-          );
-        })}
-
-        <div style={{ marginTop: 14 }}>
+      <section>
+        <div className="filters" style={{ marginBottom: 14 }}>
+          <h2 className="section-title" style={{ margin: 0 }}>Izby</h2>
+          <span className="grow" />
           <NewRoomForm policies={catalog.policies} />
         </div>
-      </section>
 
-      <section className="section">
-        <h2 className="section-title">Služby</h2>
-        {catalog.services.length === 0 && <p className="empty">Zatiaľ žiadne služby.</p>}
+        {catalog.rooms.length === 0 && <p className="empty">Zatiaľ žiadne izby.</p>}
 
-        {catalog.services.map((s) => (
-          <div key={s.id} className="item">
-            <div className="item-head">
-              <div>
-                <strong>{s.name}</strong>{' '}
-                <span className="sub">
-                  {minutesLabel(s.duration_min)}
-                  {s.buffer_min > 0 ? ` + ${s.buffer_min} min príprava` : ''} · {eur(s.price)} ·{' '}
-                  {s.resource_ids.length === 0
-                    ? <span style={{ color: 'var(--err)' }}>nikto ju neposkytuje – nedá sa rezervovať</span>
-                    : s.resource_ids.map(resourceName).join(', ')}
-                </span>
+        <div className="cards">
+          {catalog.rooms.map((r) => {
+            const seasons = pricesFor(r.id);
+            return (
+              <div key={r.id} className="card">
+                <ItemHead
+                  name={r.name}
+                  badge={r.active ? 'Na webe' : 'Skrytá'}
+                  badgeOk={r.active}
+                  action={<ToggleButton id={r.id} kind="room" active={r.active} />}
+                />
+
+                <div className="rows">
+                  <div className="row-line">
+                    Cena za noc<span className="right">{eur(r.price_night)}</span>
+                  </div>
+                  <div className="row-line">
+                    Kapacita<span className="right">{r.capacity} os. · {r.room_type}</span>
+                  </div>
+                  <div className="row-line">
+                    Minimum nocí<span className="right">{r.min_nights}</span>
+                  </div>
+                  <div className="row-line">
+                    Storno<span className="right">{policyName(r.cancellation_policy_id)}</span>
+                  </div>
+                </div>
+
+                {seasons.length > 0 && (
+                  <div className="seasons">
+                    {seasons.map((p) => (
+                      <span key={p.id} className="season">
+                        {p.season_from.slice(5, 10)} – {p.season_to.slice(5, 10)}: {eur(p.price_night)}
+                        <form action={deletePriceRuleAction} style={{ display: 'inline' }}>
+                          <input type="hidden" name="ruleId" value={p.id} />
+                          <button className="x" type="submit" aria-label="Zmazať sezónu">×</button>
+                        </form>
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                <EditRoomForm room={r} policies={catalog.policies} prices={seasons} />
               </div>
-              <div className="grow" />
-              <span className={`badge ${s.active ? 'confirmed' : 'cancelled'}`}>
-                {s.active ? 'Na webe' : 'Skrytá'}
-              </span>
-              <ToggleButton id={s.id} kind="service" active={s.active} />
-            </div>
-
-            <EditServiceForm service={s} policies={catalog.policies} resources={activeResources} />
-          </div>
-        ))}
-
-        <div style={{ marginTop: 14 }}>
-          <NewServiceForm policies={catalog.policies} resources={activeResources} />
+            );
+          })}
         </div>
       </section>
 
       <section className="section">
-        <h2 className="section-title">Zdroje a pracovný čas</h2>
+        <div className="filters" style={{ marginBottom: 14 }}>
+          <h2 className="section-title" style={{ margin: 0 }}>Služby</h2>
+          <span className="grow" />
+          <NewServiceForm policies={catalog.policies} resources={activeResources} />
+        </div>
+
+        {catalog.services.length === 0 && <p className="empty">Zatiaľ žiadne služby.</p>}
+
+        <div className="cards">
+          {catalog.services.map((s) => (
+            <div key={s.id} className="card">
+              <ItemHead
+                name={s.name}
+                badge={s.active ? 'Na webe' : 'Skrytá'}
+                badgeOk={s.active}
+                action={<ToggleButton id={s.id} kind="service" active={s.active} />}
+              />
+
+              <div className="rows">
+                <div className="row-line">
+                  Cena<span className="right">{eur(s.price)}</span>
+                </div>
+                <div className="row-line">
+                  Trvanie
+                  <span className="right">
+                    {minutesLabel(s.duration_min)}
+                    {s.buffer_min > 0 ? ` + ${s.buffer_min} min` : ''}
+                  </span>
+                </div>
+                <div className="row-line">
+                  Poskytuje
+                  <span className="right">
+                    {s.resource_ids.length === 0
+                      ? <span style={{ color: 'var(--err)' }}>nikto – nedá sa rezervovať</span>
+                      : s.resource_ids.map(resourceName).join(', ')}
+                  </span>
+                </div>
+                <div className="row-line">
+                  Storno<span className="right">{policyName(s.cancellation_policy_id)}</span>
+                </div>
+              </div>
+
+              <EditServiceForm service={s} policies={catalog.policies} resources={activeResources} />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="section">
+        <div className="filters" style={{ marginBottom: 14 }}>
+          <h2 className="section-title" style={{ margin: 0 }}>Zdroje a pracovný čas</h2>
+          <span className="grow" />
+          <NewResourceForm />
+        </div>
+
         {catalog.resources.length === 0 && (
           <p className="empty">Žiadne zdroje – bez nich sa služby nedajú rezervovať.</p>
         )}
 
-        {catalog.resources.map((r) => (
-          <div key={r.id} className="item">
-            <div className="item-head">
-              <div>
-                <strong>{r.name}</strong>{' '}
-                <span className="sub">
-                  {RESOURCE_TYPE[r.resource_type] ?? r.resource_type} ·{' '}
-                  {r.hours.length === 0
-                    ? <span style={{ color: 'var(--err)' }}>bez rozvrhu – žiadne voľné termíny</span>
-                    : r.hours.map((h) => `${WEEKDAY_SHORT[h.weekday]} ${h.open}–${h.close}`).join(', ')}
-                </span>
+        <div className="cards">
+          {catalog.resources.map((r) => (
+            <div key={r.id} className="card">
+              <ItemHead
+                name={r.name}
+                badge={r.active ? 'Aktívny' : 'Vypnutý'}
+                badgeOk={r.active}
+                action={
+                  <form action={toggleResourceAction}>
+                    <input type="hidden" name="resourceId" value={r.id} />
+                    <input type="hidden" name="active" value={String(!r.active)} />
+                    <button className={`btn${r.active ? ' danger' : ''}`} type="submit">
+                      {r.active ? 'Vypnúť' : 'Zapnúť'}
+                    </button>
+                  </form>
+                }
+              />
+
+              <div className="rows">
+                <div className="row-line">
+                  Typ<span className="right">{RESOURCE_TYPE[r.resource_type] ?? r.resource_type}</span>
+                </div>
+                <div className="row-line">
+                  Pracovný čas
+                  <span className="right">
+                    {r.hours.length === 0
+                      ? <span style={{ color: 'var(--err)' }}>bez rozvrhu</span>
+                      : r.hours.map((h) => `${WEEKDAY_SHORT[h.weekday]} ${h.open}–${h.close}`).join(', ')}
+                  </span>
+                </div>
               </div>
-              <div className="grow" />
-              <span className={`badge ${r.active ? 'confirmed' : 'cancelled'}`}>
-                {r.active ? 'Aktívny' : 'Vypnutý'}
-              </span>
-              <form action={toggleResourceAction}>
-                <input type="hidden" name="resourceId" value={r.id} />
-                <input type="hidden" name="active" value={String(!r.active)} />
-                <button className={`btn${r.active ? ' danger' : ''}`} type="submit">
-                  {r.active ? 'Vypnúť' : 'Zapnúť'}
-                </button>
-              </form>
+
+              <ResourceHoursForm resource={r} />
             </div>
-
-            <ResourceHoursForm resource={r} />
-          </div>
-        ))}
-
-        <div style={{ marginTop: 14 }}>
-          <NewResourceForm />
+          ))}
         </div>
       </section>
     </AdminShell>

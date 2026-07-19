@@ -107,11 +107,18 @@ export interface OverviewStay {
   id: string; customer_name: string; room_name: string;
   check_in: string; check_out: string;
 }
+export interface OverviewDay { day: string; occupied: number }
+export interface OverviewRecent {
+  id: string; status: BookingStatus; total_price: string;
+  created_at: string; customer_name: string;
+}
 export interface Overview {
   metrics: OverviewMetrics;
   arrivals: OverviewStay[];
   departures: OverviewStay[];
   attention: { kind: string; label: string }[];
+  week: OverviewDay[];
+  recent: OverviewRecent[];
 }
 
 export const getOverview = () => adminReq<Overview>('/overview');

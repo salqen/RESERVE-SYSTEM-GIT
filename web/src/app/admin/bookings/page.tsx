@@ -77,14 +77,25 @@ export default async function AdminBookingsPage({
         ))}
       </div>
 
-      {list.bookings.length === 0 && (
-        <div className="alert info">
-          {q || status ? 'Filtru nezodpovedá žiadna rezervácia.' : 'Zatiaľ nie sú žiadne rezervácie.'}
+      <div className="panel">
+        <div className="panel-head">
+          <span className="panel-title">
+            {status ? FILTERS.find((f) => f.key === status)?.label : 'Všetky rezervácie'}
+          </span>
+          <span className="grow" />
+          <span className="panel-note">{list.total} záznamov</span>
         </div>
-      )}
 
-      {list.bookings.length > 0 && (
-        <div className="table-scroll">
+        {list.bookings.length === 0 && (
+          <div className="panel-body">
+            <p className="empty">
+              {q || status ? 'Filtru nezodpovedá žiadna rezervácia.' : 'Zatiaľ nie sú žiadne rezervácie.'}
+            </p>
+          </div>
+        )}
+
+        {list.bookings.length > 0 && (
+        <div className="table-scroll panel-body flush">
           <table className="table">
             <thead>
               <tr>
@@ -121,7 +132,8 @@ export default async function AdminBookingsPage({
             </tbody>
           </table>
         </div>
-      )}
+        )}
+      </div>
 
       {list.totalPages > 1 && (
         <div className="filters" style={{ marginTop: 16 }}>

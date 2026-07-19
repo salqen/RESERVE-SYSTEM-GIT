@@ -36,7 +36,7 @@ export function NewRoomForm({ policies }: { policies: { id: string; name: string
   const [state, formAction] = useFormState<CatalogFormState, FormData>(createRoomAction, {});
 
   return (
-    <details className="card">
+    <details className="card" style={{ minWidth: 300 }}>
       <summary className="disclosure">Pridať izbu</summary>
       <form action={formAction} style={{ marginTop: 14, maxWidth: 460 }}>
         <Feedback state={state} />
@@ -84,7 +84,7 @@ export function NewServiceForm({
   const [state, formAction] = useFormState<CatalogFormState, FormData>(createServiceAction, {});
 
   return (
-    <details className="card">
+    <details className="card" style={{ minWidth: 300 }}>
       <summary className="disclosure">Pridať službu</summary>
       <form action={formAction} style={{ marginTop: 14, maxWidth: 460 }}>
         <Feedback state={state} />
