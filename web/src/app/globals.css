@@ -13,6 +13,9 @@
 
 * { box-sizing: border-box; }
 
+html { scroll-behavior: smooth; }
+h1[id], h2[id] { scroll-margin-top: 16px; }
+
 body {
   margin: 0;
   color: var(--fg);

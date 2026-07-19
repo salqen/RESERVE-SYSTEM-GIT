@@ -15,7 +15,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="inner">
             <Link href="/" className="brand">Penzión</Link>
             <nav>
-              <Link href="/">Ubytovanie</Link>
+              <Link href="/#ubytovanie">Ubytovanie</Link>
               <Link href="/#sluzby">Služby</Link>
             </nav>
           </div>
