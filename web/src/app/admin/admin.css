@@ -164,3 +164,63 @@
   .admin-main { padding: 14px; }
   .admin-rail { flex-basis: 48px; }
 }
+
+/* ---------------------------------------------------- filtre a chipsy */
+
+.admin-filters { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+.admin-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+.admin-chip {
+  font-size: 11.5px; padding: 5px 11px; border-radius: 20px;
+  background: var(--panel-2); border: 1px solid var(--border);
+  color: var(--muted); text-decoration: none;
+}
+.admin-chip:hover { border-color: var(--border-strong); color: var(--text); text-decoration: none; }
+.admin-chip.on { background: var(--volt-soft); border-color: var(--volt); color: var(--volt-2); }
+
+/* ------------------------------------------------------------ tabuľky */
+
+.admin-table-scroll { overflow-x: auto; }
+.admin-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 620px; }
+.admin-table th {
+  text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: .07em;
+  color: var(--desc); font-weight: 700; padding: 0 12px 8px 0; white-space: nowrap;
+}
+.admin-table td { padding: 10px 12px 10px 0; border-top: 1px solid var(--border); vertical-align: top; }
+.admin-table tr:hover td { background: rgba(255, 255, 255, .015); }
+.admin-sub { color: var(--muted); font-size: 12px; }
+
+.admin-badge {
+  display: inline-block; font-size: 10.5px; font-weight: 700;
+  padding: 3px 9px; border-radius: 20px; white-space: nowrap;
+  background: var(--panel-2); border: 1px solid var(--border); color: var(--muted);
+}
+.admin-badge.confirmed { background: var(--volt-soft); border-color: var(--volt); color: var(--volt-2); }
+.admin-badge.hold { background: var(--card-hover); border-color: var(--border-strong); color: var(--volt-2); }
+.admin-badge.cancelled { background: var(--panel-2); border-color: var(--border); color: var(--desc); }
+
+/* -------------------------------------------------------------- karty */
+
+.admin-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.admin-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px 16px;
+}
+.admin-card h3 {
+  font-size: 11px; text-transform: uppercase; letter-spacing: .07em;
+  color: var(--volt-2); font-weight: 700; margin-bottom: 10px;
+}
+.admin-dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: 13px; margin: 0; }
+.admin-dl dt { color: var(--muted); white-space: nowrap; }
+.admin-dl dd { margin: 0; color: var(--text); word-break: break-word; }
+
+.admin-log {
+  display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap;
+  padding: 7px 0; border-top: 1px solid var(--border); font-size: 12.5px;
+}
+.admin-log strong { color: var(--volt-2); font-weight: 600; }
+
+.admin-btn.danger { background: rgba(255, 107, 107, .12); border-color: #7a2f2f; color: #ffb4b4; }
+.admin-btn.danger:hover { background: rgba(255, 107, 107, .2); border-color: #a03c3c; }
+.admin-alert.ok { background: rgba(61, 220, 115, .1); border-color: #2e6b45; color: #7fe3a0; }
+
+select.admin-input { cursor: pointer; }

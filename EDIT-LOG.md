@@ -43,6 +43,10 @@ Záznam zmien v projektových dokumentoch. Formát: dátum | súbor | zmena | au
 
 | 2026-07-19 | web/src/app/page.tsx, layout.tsx, globals.css | Web: úvodná stránka zobrazuje voľné izby pre najbližší termín (predvyplnené dátumy), sekcie Ubytovanie/Služby majú funkčné kotvy v menu | Claude |
 | 2026-07-19 | src/modules/admin/auth.ts, src/index.ts, src/config.ts, .env.example | BEZPEČNOSŤ: `/admin/*` bolo verejne prístupné bez akejkoľvek autentifikácie. Pridaný Bearer token (`ADMIN_TOKEN`) s timing-safe porovnaním, fail-closed (bez tokenu 503, nie otvorené) | Claude |
+| 2026-07-19 | src/modules/admin/bookings-router.ts | Admin API rezervácií: zoznam so stránkovaním, filtrom stavu a hľadaním (meno, e-mail, ID), detail s položkami a audit logom, ručné storno so zápisom e-mailu správcu do auditu | Claude |
+| 2026-07-19 | src/modules/admin/users-router.ts | Správa správcov (len rola owner): zoznam, vytvorenie, zmena hesla/roly, deaktivácia; poistka proti vyradeniu posledného ownera; zmena hesla a deaktivácia rušia otvorené sessions | Claude |
+| 2026-07-19 | web/src/app/admin/bookings/, users/, shell.tsx | Admin stránky: zoznam rezervácií s filtrami, detail s dvojkrokovým stornom, správa používateľov; spoločný rám s bočnou navigáciou podľa roly | Claude |
+| 2026-07-19 | tests/admin-bookings.db.test.ts | Testy filtra rezervácií (skladanie SQL + PGlite): stav, meno, e-mail, ID, kombinácie | Claude |
 | 2026-07-19 | web/src/app/(site)/, web/src/app/layout.tsx | Route group: zákaznícky web presunutý do `(site)` s vlastnou hlavičkou, koreňový layout drží len html/body (admin má vlastný vzhľad) | Claude |
 | 2026-07-19 | web/src/app/admin/ | Admin UI: prihlásenie + kalendár obsadenosti (mriežka izby × dni, pruhy rezervácií, sekcia zdrojov, navigácia po týždňoch, obsadenosť v %); tmavý štýl podľa COMPONENT SITE / component-library-v2.html | Claude |
 | 2026-07-19 | web/src/lib/admin-session.ts, admin-api.ts | Session token v httpOnly cookie (secure, sameSite lax, path /admin); admin API klient beží len na serveri | Claude |

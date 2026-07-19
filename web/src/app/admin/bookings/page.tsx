@@ -1,0 +1,138 @@
+export const dynamic = 'force-dynamic';
+import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { getBookings, getMe, UnauthorizedError } from '@/lib/admin-api';
+import AdminShell from '../shell';
+import { eur } from '@/lib/format';
+
+const STATUS_LABEL: Record<string, string> = {
+  hold: 'Hold',
+  confirmed: 'Potvrdená',
+  cancelled: 'Zrušená',
+};
+
+const FILTERS = [
+  { key: '', label: 'Všetky' },
+  { key: 'confirmed', label: 'Potvrdené' },
+  { key: 'hold', label: 'Holdy' },
+  { key: 'cancelled', label: 'Zrušené' },
+];
+
+function dateTime(iso: string): string {
+  return `${iso.slice(8, 10)}. ${iso.slice(5, 7)}. ${iso.slice(0, 4)} ${iso.slice(11, 16)}`;
+}
+
+export default async function AdminBookingsPage({
+  searchParams,
+}: {
+  searchParams: { q?: string; status?: string; page?: string };
+}) {
+  const q = (searchParams.q ?? '').trim();
+  const status = FILTERS.some((f) => f.key === searchParams.status) ? searchParams.status! : '';
+  const page = Math.max(1, Number(searchParams.page ?? 1) || 1);
+
+  let me, list;
+  try {
+    [me, list] = await Promise.all([getMe(), getBookings({ q, status, page })]);
+  } catch (err) {
+    if (err instanceof UnauthorizedError) redirect('/admin/login');
+    throw err;
+  }
+
+  const link = (over: Record<string, string>) => {
+    const p = new URLSearchParams();
+    if (q) p.set('q', q);
+    if (status) p.set('status', status);
+    for (const [k, v] of Object.entries(over)) v ? p.set(k, v) : p.delete(k);
+    const qs = p.toString();
+    return `/admin/bookings${qs ? `?${qs}` : ''}`;
+  };
+
+  return (
+    <AdminShell user={me.user} active="bookings" subtitle="Rezervácie">
+      <div className="admin-head">
+        <span className="admin-title">Rezervácie</span>
+        <span className="admin-range">{list.total} celkovo</span>
+      </div>
+
+      <form className="admin-filters" action="/admin/bookings" method="get">
+        <input
+          className="admin-input" type="search" name="q" defaultValue={q}
+          placeholder="Meno, e-mail alebo ID rezervácie" style={{ maxWidth: 320 }}
+          aria-label="Hľadať rezerváciu"
+        />
+        {status && <input type="hidden" name="status" value={status} />}
+        <button className="admin-btn" type="submit">Hľadať</button>
+        {(q || status) && <Link className="admin-btn" href="/admin/bookings">Zrušiť filter</Link>}
+      </form>
+
+      <div className="admin-chips">
+        {FILTERS.map((f) => (
+          <Link
+            key={f.key || 'all'}
+            className={`admin-chip${f.key === status ? ' on' : ''}`}
+            href={link({ status: f.key, page: '' })}
+          >
+            {f.label}
+          </Link>
+        ))}
+      </div>
+
+      {list.bookings.length === 0 && (
+        <div className="admin-alert info">
+          {q || status ? 'Filtru nezodpovedá žiadna rezervácia.' : 'Zatiaľ nie sú žiadne rezervácie.'}
+        </div>
+      )}
+
+      {list.bookings.length > 0 && (
+        <div className="admin-table-scroll">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>Zákazník</th>
+                <th>Položky</th>
+                <th>Prvá noc</th>
+                <th>Suma</th>
+                <th>Stav</th>
+                <th>Vytvorená</th>
+              </tr>
+            </thead>
+            <tbody>
+              {list.bookings.map((b) => (
+                <tr key={b.id}>
+                  <td>
+                    <Link href={`/admin/bookings/${b.id}`}>{b.customer_name}</Link>
+                    <div className="admin-sub">{b.customer_email}</div>
+                  </td>
+                  <td className="admin-sub">
+                    {b.room_count > 0 && `${b.room_count}× izba`}
+                    {b.room_count > 0 && b.service_count > 0 && ', '}
+                    {b.service_count > 0 && `${b.service_count}× služba`}
+                  </td>
+                  <td className="admin-sub">
+                    {b.first_night ? b.first_night.slice(0, 10) : '—'}
+                  </td>
+                  <td>{eur(b.total_price)}</td>
+                  <td>
+                    <span className={`admin-badge ${b.status}`}>{STATUS_LABEL[b.status]}</span>
+                  </td>
+                  <td className="admin-sub">{dateTime(b.created_at)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {list.totalPages > 1 && (
+        <div className="admin-head" style={{ marginTop: 14 }}>
+          {page > 1 && <Link className="admin-btn" href={link({ page: String(page - 1) })}>← Predošlé</Link>}
+          <span className="admin-range">Strana {page} z {list.totalPages}</span>
+          {page < list.totalPages && (
+            <Link className="admin-btn" href={link({ page: String(page + 1) })}>Ďalšie →</Link>
+          )}
+        </div>
+      )}
+    </AdminShell>
+  );
+}

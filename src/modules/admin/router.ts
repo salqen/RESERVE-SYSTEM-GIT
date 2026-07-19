@@ -1,8 +1,13 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { pool } from '../../db';
+import { adminBookingsRouter } from './bookings-router';
+import { adminUsersRouter } from './users-router';
 
 export const adminRouter = Router();
+
+adminRouter.use('/bookings', adminBookingsRouter);
+adminRouter.use('/users', adminUsersRouter);
 
 /**
  * GET /admin/calendar?from=2026-08-01&to=2026-08-08[&propertyId=...]

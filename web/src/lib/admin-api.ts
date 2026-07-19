@@ -93,3 +93,59 @@ export interface CalendarResponse {
 export const getCalendar = (from: string, to: string) =>
   adminReq<CalendarResponse>(
     `/calendar?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
+
+// ---------------------------------------------------------------- rezervácie
+
+export type BookingStatus = 'hold' | 'confirmed' | 'cancelled';
+
+export interface BookingListItem {
+  id: string; status: BookingStatus; total_price: string;
+  payment_status: string; created_at: string; hold_expires_at: string | null;
+  customer_name: string; customer_email: string;
+  room_count: number; service_count: number; first_night: string | null;
+}
+
+export interface BookingList {
+  bookings: BookingListItem[];
+  page: number; pageSize: number; total: number; totalPages: number;
+}
+
+export function getBookings(params: { q?: string; status?: string; page?: number }) {
+  const search = new URLSearchParams();
+  if (params.q) search.set('q', params.q);
+  if (params.status) search.set('status', params.status);
+  if (params.page && params.page > 1) search.set('page', String(params.page));
+  const qs = search.toString();
+  return adminReq<BookingList>(`/bookings${qs ? `?${qs}` : ''}`);
+}
+
+export interface BookingDetail {
+  id: string; status: BookingStatus; total_price: string; payment_status: string;
+  erp_invoice_id: string | null; hold_expires_at: string | null; created_at: string;
+  note: string | null;
+  customer_name: string; customer_email: string; customer_phone: string | null;
+  rooms: { room_id: string; name: string; status: string; check_in: string; check_out: string; price: string }[];
+  services: { service_id: string; name: string; status: string; resource_name: string | null; starts_at: string; ends_at: string; price: string }[];
+  audit: { actor: string; action: string; detail: unknown; created_at: string }[];
+}
+
+export const getBooking = (id: string) => adminReq<BookingDetail>(`/bookings/${id}`);
+
+export const cancelBookingAsAdmin = (id: string) =>
+  adminReq<unknown>(`/bookings/${id}/cancel`, { method: 'POST', body: '{}' });
+
+// ------------------------------------------------------------- používatelia
+
+export interface AdminUserRow extends AdminUser {
+  active: boolean; created_at: string; last_login_at: string | null; active_sessions: number;
+}
+
+export const getUsers = () => adminReq<{ users: AdminUserRow[] }>('/users');
+
+export const createUser = (body: { email: string; name: string; password: string; role: string }) =>
+  adminReq<{ user: AdminUserRow }>('/users', { method: 'POST', body: JSON.stringify(body) });
+
+export const updateUser = (
+  id: string,
+  body: { name?: string; role?: string; active?: boolean; password?: string },
+) => adminReq<{ user: AdminUserRow }>(`/users/${id}`, { method: 'PATCH', body: JSON.stringify(body) });

@@ -3,7 +3,7 @@ import { Fragment } from 'react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getCalendar, getMe, UnauthorizedError, type CalendarRoom } from '@/lib/admin-api';
-import { logoutAction } from './actions';
+import AdminShell from './shell';
 
 const DAY_MS = 86_400_000;
 
@@ -89,32 +89,7 @@ export default async function AdminCalendarPage({
     ? Math.round((occupiedNights / (calendar.rooms.length * total)) * 100) : 0;
 
   return (
-    <>
-      <div className="admin-top">
-        <div className="admin-brand">
-          <div className="admin-mark">P</div>
-          <div>
-            <div className="admin-brand-name">Penzión <b>admin</b></div>
-            <div className="admin-brand-sub">Kalendár obsadenosti</div>
-          </div>
-        </div>
-        <div className="admin-spacer" />
-        <div className="admin-who">
-          <b>{me.user.name}</b>
-          {me.user.email}
-        </div>
-        <form action={logoutAction}>
-          <button className="admin-btn" type="submit">Odhlásiť</button>
-        </form>
-      </div>
-
-      <div className="admin-body">
-        <nav className="admin-rail" aria-label="Sekcie">
-          <Link href="/admin" className="on" title="Kalendár" aria-label="Kalendár">▦</Link>
-          <Link href="/" title="Zákaznícky web" aria-label="Zákaznícky web">↗</Link>
-        </nav>
-
-        <main className="admin-main">
+    <AdminShell user={me.user} active="calendar" subtitle="Kalendár obsadenosti">
           <div className="admin-head">
             <span className="admin-title">Obsadenosť</span>
             <Link className="admin-btn" href={`/admin?from=${addDays(from, -total)}&to=${from}`}>← Predošlé</Link>
@@ -198,8 +173,6 @@ export default async function AdminCalendarPage({
               </div>
             ))}
           </section>
-        </main>
-      </div>
-    </>
+    </AdminShell>
   );
 }
