@@ -116,7 +116,8 @@ export async function confirmBooking(bookingId: string) {
 
     await client.query(
       `INSERT INTO sync_outbox (target, event_type, payload)
-       VALUES ('erp', 'booking.confirmed', jsonb_build_object('bookingId', $1::text))`,
+       SELECT t, 'booking.confirmed', jsonb_build_object('bookingId', $1::text)
+         FROM unnest(ARRAY['erp','email']) AS t`,
       [bookingId],
     );
     await audit(client, bookingId, 'web', 'confirm', {});
@@ -189,8 +190,9 @@ export async function cancelBooking(bookingId: string, actor: string) {
 
     await client.query(
       `INSERT INTO sync_outbox (target, event_type, payload)
-       VALUES ('erp', 'booking.cancelled',
-               jsonb_build_object('bookingId', $1::text, 'refund', $2::numeric, 'fee', $3::numeric))`,
+       SELECT t, 'booking.cancelled',
+              jsonb_build_object('bookingId', $1::text, 'refund', $2::numeric, 'fee', $3::numeric)
+         FROM unnest(ARRAY['erp','email']) AS t`,
       [bookingId, refundTotal, feeTotal],
     );
     await audit(client, bookingId, actor, 'cancel', { wasConfirmed, refundTotal, feeTotal, lines });

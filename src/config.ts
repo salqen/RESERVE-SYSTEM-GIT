@@ -8,6 +8,11 @@ export const config = {
   keepiWebhookSecret: process.env.KEEPI_WEBHOOK_SECRET ?? '',
   // Fáza 3 – service manager
   serviceManagerWebhookSecret: process.env.SERVICE_MANAGER_WEBHOOK_SECRET ?? '',
-  // Fáza 4 – zákaznícky web (CORS)
+  // Fáza 4 – zákaznícky web (CORS, odkazy v e-mailoch)
   webOrigin: process.env.WEB_ORIGIN ?? 'http://localhost:3000',
+  // Fáza 4 – e-maily. Bez EMAIL_API_KEY a EMAIL_FROM je odosielanie vypnuté
+  // (eventy sa spracujú, len sa nič neodošle) – bezpečný default.
+  emailProvider: process.env.EMAIL_PROVIDER ?? 'resend',   // resend | postmark
+  emailApiKey: process.env.EMAIL_API_KEY ?? '',
+  emailFrom: process.env.EMAIL_FROM ?? '',
 };

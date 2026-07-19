@@ -43,6 +43,12 @@ Záznam zmien v projektových dokumentoch. Formát: dátum | súbor | zmena | au
 
 | 2026-07-19 | web/src/app/page.tsx, layout.tsx, globals.css | Web: úvodná stránka zobrazuje voľné izby pre najbližší termín (predvyplnené dátumy), sekcie Ubytovanie/Služby majú funkčné kotvy v menu | Claude |
 | 2026-07-19 | src/modules/admin/auth.ts, src/index.ts, src/config.ts, .env.example | BEZPEČNOSŤ: `/admin/*` bolo verejne prístupné bez akejkoľvek autentifikácie. Pridaný Bearer token (`ADMIN_TOKEN`) s timing-safe porovnaním, fail-closed (bez tokenu 503, nie otvorené) | Claude |
+| 2026-07-19 | db/migrations/002_email_outbox.sql, db/schema.sql | Outbox rozšírený o cieľ `email`; tabuľka `email_log` s UNIQUE (booking_id, template) ako poistka proti dvojitému odoslaniu | Claude |
+| 2026-07-19 | src/modules/email/templates.ts | Šablóny potvrdenia a storna (text + HTML), slovenské dátumy a sumy, escapovanie vstupov od zákazníka | Claude |
+| 2026-07-19 | src/modules/email/mailer.ts | Odosielanie cez HTTP API (Resend, Postmark) bez akejkoľvek knižnice; bez `EMAIL_API_KEY`/`EMAIL_FROM` je mailer inertný | Claude |
+| 2026-07-19 | src/modules/email/sender.ts | Outbox sender e-mailov: načíta rezerváciu, vyrenderuje šablónu, odošle a zapíše do `email_log`; pred odoslaním kontroluje, či už tá istá šablóna neodišla | Claude |
+| 2026-07-19 | src/modules/bookings/service.ts, src/jobs/cleanup.ts, src/config.ts, .env.example | Potvrdenie a storno zaraďujú event pre `erp` aj `email` (samostatné riadky – výpadok jedného kanála neblokuje druhý); `makeRoutingSender` smeruje outbox podľa cieľa | Claude |
+| 2026-07-19 | tests/email.test.ts, tests/email.db.test.ts | Testy šablón, oboch poskytovateľov (podvrhnutý fetch), inertného mailera, deduplikácie a smerovania outboxu | Claude |
 | 2026-07-19 | src/modules/admin/catalog-router.ts | Sezónny cenník: POST /catalog/rooms/:id/prices, DELETE /catalog/prices/:id; prekryv sezón blokuje exclusion constraint v DB (23P01 → zrozumiteľná hláška) | Claude |
 | 2026-07-19 | src/modules/admin/catalog-router.ts | Zdroje: POST/PATCH /catalog/resources, PUT /catalog/resources/:id/hours (celý týždenný rozvrh naraz v transakcii); GET /catalog vracia aj rozvrhy a sezónne ceny | Claude |
 | 2026-07-19 | web/src/app/admin/catalog/edit-forms.tsx | Formuláre na úpravu existujúcich izieb a služieb, pridanie a mazanie sezón, zakladanie zdrojov a nastavenie pracovného času po dňoch | Claude |
@@ -131,7 +137,16 @@ Záznam zmien v projektových dokumentoch. Formát: dátum | súbor | zmena | au
 
 ## Čo zostáva
 
-**Fáza 4:** reálna platobná brána (teraz testovacie tlačidlo, potvrdí bez platby), potvrdzovacie e-maily, zákaznícky účet s históriou.
+**Fáza 4:** reálna platobná brána (teraz testovacie tlačidlo, potvrdí bez platby), zákaznícky účet s históriou.
+
+**E-maily – hotové, čaká sa na účet u poskytovateľa.** Kód je kompletný a otestovaný; bez `EMAIL_API_KEY` a `EMAIL_FROM` sa len nič neodosiela. Zapnutie = založiť účet (Resend alebo Postmark), overiť doménu odosielateľa a doplniť tri premenné v Railway:
+
+```
+EMAIL_PROVIDER=resend        # alebo postmark
+EMAIL_API_KEY=<kľúč>
+EMAIL_FROM=Penzión <rezervacie@tvoja-domena.sk>
+```
+
 **Fáza 5:** pripomienky, čakacie listiny, skupinové rezervácie, monitoring, GDPR retencia, záťažový test.
 **Konfigurácia:** Keepi premenné (`KEEPI_API_URL`, `KEEPI_API_KEY`, `KEEPI_WEBHOOK_SECRET`, `SERVICE_MANAGER_WEBHOOK_SECRET`) nenastavené – bez nich adaptér necháva eventy v outboxe (bezpečné). Vlastná doména neskôr. Voliteľné: premenovať službu `protective-eagerness` na `web`.
 

@@ -203,7 +203,7 @@ CREATE TABLE audit_log (
 
 CREATE TABLE sync_outbox (
   id           bigserial PRIMARY KEY,
-  target       text NOT NULL CHECK (target IN ('erp','service_manager')),
+  target       text NOT NULL CHECK (target IN ('erp','service_manager','email')),
   event_type   text NOT NULL,       -- 'booking.confirmed','booking.cancelled',...
   payload      jsonb NOT NULL,
   status       text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','sent','failed')),
@@ -257,3 +257,20 @@ CREATE TABLE admin_login_attempt (
 );
 
 CREATE INDEX idx_admin_login_attempt_recent ON admin_login_attempt (lower(email), created_at DESC);
+
+-- ---------------------------------------------------------------------
+-- Odoslané e-maily (viď db/migrations/002_email_outbox.sql)
+-- ---------------------------------------------------------------------
+
+CREATE TABLE email_log (
+  id           bigserial PRIMARY KEY,
+  booking_id   uuid REFERENCES booking(id) ON DELETE SET NULL,
+  recipient    text NOT NULL,
+  template     text NOT NULL,
+  subject      text NOT NULL,
+  provider_id  text,
+  created_at   timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (booking_id, template)
+);
+
+CREATE INDEX idx_email_log_recipient ON email_log (lower(recipient), created_at DESC);

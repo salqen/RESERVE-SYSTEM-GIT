@@ -3,6 +3,8 @@ import { config } from '../config';
 import { KeepiClient } from '../modules/erp/keepi';
 import { makeErpSender, OutboxSender } from '../modules/erp/sender';
 import { purgeExpired } from '../modules/admin/sessions';
+import { Mailer, resolveProvider } from '../modules/email/mailer';
+import { makeEmailSender } from '../modules/email/sender';
 
 /**
  * Cleanup job: ruší expirované holdy → uvoľní termín.
@@ -53,11 +55,46 @@ export async function processOutbox(sender: OutboxSender, db: Queryable = pool) 
   return rows.length;
 }
 
+/**
+ * Nasmeruje event na správneho sendera podľa cieľa. Každý cieľ má vlastný
+ * riadok v outboxe, takže výpadok ERP neblokuje e-maily a naopak.
+ */
+export function makeRoutingSender(senders: Record<string, OutboxSender>): OutboxSender {
+  return async (target, eventType, payload) => {
+    const sender = senders[target];
+    if (!sender) {
+      // Neznámy cieľ nenecháme v nekonečnom retry – zalogujeme a potvrdíme.
+      console.log(`[outbox→${target}] ${eventType}`, JSON.stringify(payload));
+      return;
+    }
+    await sender(target, eventType, payload);
+  };
+}
+
 export function startJobs() {
   // Fáza 3: reálny adaptér na keepi ERP. Bez KEEPI_API_URL sender zlyhá
   // a eventy čakajú v outboxe (retry) – bezpečný default pre dev.
   const keepi = new KeepiClient({ apiUrl: config.keepiApiUrl, apiKey: config.keepiApiKey });
-  const sender = makeErpSender(keepi);
+
+  // Fáza 4: e-maily. Bez kľúča je mailer inertný – eventy sa spracujú,
+  // len sa nič neodošle.
+  const mailer = new Mailer({
+    provider: resolveProvider({
+      provider: config.emailProvider,
+      apiKey: config.emailApiKey,
+      from: config.emailFrom,
+    }),
+    apiKey: config.emailApiKey,
+    from: config.emailFrom,
+  });
+  if (!mailer.enabled) {
+    console.warn('[email] EMAIL_API_KEY / EMAIL_FROM nie sú nastavené – e-maily sa neodosielajú.');
+  }
+
+  const sender = makeRoutingSender({
+    erp: makeErpSender(keepi),
+    email: makeEmailSender(mailer, config.webOrigin),
+  });
 
   setInterval(() => {
     expireHolds().catch((e) => console.error('expireHolds:', e.message));
